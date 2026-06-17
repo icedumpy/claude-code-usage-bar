@@ -124,10 +124,10 @@ private struct LimitRowView: View {
                 Text(Formatting.percent(row.percent))
                     .font(.callout.monospacedDigit().weight(.semibold))
             }
-            // Usage racing the clock: colored usage bar over a blue time bar.
+            // Usage racing the clock: colored usage bar over a red time bar.
             CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
             if let elapsed = row.elapsedFraction {
-                CapsuleBar(value: elapsed * 100, color: .blue.opacity(0.6), height: 3)
+                CapsuleBar(value: elapsed * 100, color: .red.opacity(0.65), height: 3)
             }
             HStack(spacing: 4) {
                 Text(Formatting.reset(to: row.resetsAt))

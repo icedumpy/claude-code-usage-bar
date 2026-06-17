@@ -16,10 +16,17 @@ final class SettingsWindowController {
             w.title = "Claude Usage Settings"
             w.styleMask = [.titled, .closable]
             w.isReleasedWhenClosed = false
-            w.center()
+            // Place it clear of the top-right menu bar dropdown (left-of-center).
+            if let vf = NSScreen.main?.visibleFrame {
+                w.setFrameOrigin(NSPoint(x: vf.minX + 100,
+                                         y: vf.midY - w.frame.height / 2))
+            } else {
+                w.center()
+            }
             window = w
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
 }
