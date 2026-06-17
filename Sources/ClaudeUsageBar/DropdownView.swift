@@ -124,17 +124,37 @@ private struct LimitRowView: View {
                 Text(Formatting.percent(row.percent))
                     .font(.callout.monospacedDigit().weight(.semibold))
             }
-            CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity))
-            Text(Formatting.reset(to: row.resetsAt))
-                .font(.caption2).foregroundStyle(.tertiary)
+            // Usage racing the clock: colored usage bar over a blue time bar.
+            CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
+            if let elapsed = row.elapsedFraction {
+                CapsuleBar(value: elapsed * 100, color: .blue.opacity(0.6), height: 3)
+            }
+            HStack(spacing: 4) {
+                Text(Formatting.reset(to: row.resetsAt))
+                if !paceNote.isEmpty {
+                    Spacer()
+                    Text(paceNote)
+                }
+            }
+            .font(.caption2).foregroundStyle(.tertiary)
         }
+    }
+
+    /// Compares usage to elapsed time — is usage outrunning the clock?
+    private var paceNote: String {
+        guard let elapsed = row.elapsedFraction else { return "" }
+        let usage = row.percent / 100
+        if usage > elapsed + 0.08 { return "ahead of pace" }
+        if usage < elapsed - 0.08 { return "behind pace" }
+        return "on pace"
     }
 }
 
-/// A rounded usage bar (nicer than the default ProgressView at this size).
+/// A rounded bar (nicer than the default ProgressView at this size).
 private struct CapsuleBar: View {
     let value: Double
     let color: Color
+    var height: CGFloat = 5
 
     var body: some View {
         GeometryReader { geo in
@@ -144,6 +164,6 @@ private struct CapsuleBar: View {
                     .frame(width: max(3, geo.size.width * min(value, 100) / 100))
             }
         }
-        .frame(height: 5)
+        .frame(height: height)
     }
 }

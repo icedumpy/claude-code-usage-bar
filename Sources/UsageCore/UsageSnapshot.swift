@@ -9,6 +9,9 @@ public struct LimitRow: Identifiable, Sendable, Equatable {
     public let resetsAt: Date?
     public let isActive: Bool
     public let isHero: Bool
+    /// Fraction (0...1) of this limit's window that has elapsed — the "time"
+    /// racing against `percent`.
+    public let elapsedFraction: Double?
 }
 
 /// The merged, UI-ready view of everything. Built by `make` (pure), published
@@ -42,6 +45,11 @@ public struct UsageSnapshot: Sendable, Equatable {
             default: return 3
             }
         }
+        func elapsed(_ l: Limit) -> Double? {
+            guard let rs = l.resetsAt else { return nil }
+            let windowSecs: Double = (l.kind == "session") ? 5 * 3600 : 7 * 24 * 3600
+            return max(0, min(1, 1 - rs.timeIntervalSince(now) / windowSecs))
+        }
         let rows: [LimitRow] = usage.limits
             .sorted { order($0) < order($1) }
             .map { l in
@@ -54,7 +62,8 @@ public struct UsageSnapshot: Sendable, Equatable {
                     severity: l.severity,
                     resetsAt: l.resetsAt,
                     isActive: l.isActive,
-                    isHero: hero.map { isSameLimit($0, l) } ?? false)
+                    isHero: hero.map { isSameLimit($0, l) } ?? false,
+                    elapsedFraction: elapsed(l))
             }
 
         let totalTokens = breakdown.reduce(0) { $0 + $1.tokens.total }
