@@ -87,23 +87,6 @@ final class UsageStore: ObservableObject {
             // surfaced as a scary banner — we just keep showing last-known data.
             phase = .error(Self.describe(error))
         }
-        Self.debugLog(menuBarText)
-    }
-
-    /// Appends the current menu bar text to a log file when CLAUDE_USAGE_LOG is
-    /// set. Used only for headless verification of the running GUI app.
-    private static let logFormatter = ISO8601DateFormatter()
-
-    private static func debugLog(_ text: String) {
-        guard let path = ProcessInfo.processInfo.environment["CLAUDE_USAGE_LOG"] else { return }
-        let line = "\(logFormatter.string(from: Date())) \(text)\n"
-        if let data = line.data(using: .utf8) {
-            if let h = FileHandle(forWritingAtPath: path) {
-                h.seekToEndOfFile(); h.write(data); try? h.close()
-            } else {
-                try? data.write(to: URL(fileURLWithPath: path))
-            }
-        }
     }
 
     /// Percent text for the menu bar (no emoji — the tinted Claude mark carries
@@ -127,28 +110,6 @@ final class UsageStore: ObservableObject {
         case .ok(let snap): return snap.heroSeverity
         case .error: return lastSnapshot?.heroSeverity ?? .unknown
         case .loading, .signedOut: return .unknown
-        }
-    }
-
-    /// The string shown in the menu bar (emoji dot + percent, or a warning).
-    /// Retained for the debug log.
-    var menuBarText: String {
-        switch phase {
-        case .loading:
-            return "…"
-        case .ok(let snap):
-            if let p = snap.heroPercent {
-                return "\(SeverityStyle.dot(snap.heroSeverity)) \(Formatting.percent(p))"
-            }
-            return "🟢 —"
-        case .signedOut:
-            return "⚠️"
-        case .error:
-            // fall back to last known good number if we have one
-            if let snap = lastSnapshot, let p = snap.heroPercent {
-                return "\(SeverityStyle.dot(snap.heroSeverity)) \(Formatting.percent(p))"
-            }
-            return "⚠️"
         }
     }
 

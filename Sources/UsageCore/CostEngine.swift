@@ -63,8 +63,11 @@ public actor CostEngine {
 
         for case let url as URL in enumerator {
             guard url.pathExtension == "jsonl" else { continue }
+            let rv = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isSymbolicLinkKey])
+            // Don't follow symlinks — a planted link could point outside the tree.
+            if rv?.isSymbolicLink == true { continue }
             let key = url.path
-            let mtime = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            let mtime = rv?.contentModificationDate ?? .distantPast
             if mtime < since { cache[key] = nil; continue }
             liveKeys.insert(key)
 

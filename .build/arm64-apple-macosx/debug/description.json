@@ -28,6 +28,10 @@
       "inputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeMark.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift"
         },
         {
@@ -75,6 +79,7 @@
       "moduleName" : "ClaudeUsageBar",
       "moduleOutputPath" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/Modules/ClaudeUsageBar.swiftmodule",
       "objects" : [
+        "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/DropdownView.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/LaunchAtLogin.swift.o",
@@ -124,6 +129,10 @@
       "outputs" : [
         {
           "kind" : "file",
+          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swift.o"
         },
         {
@@ -161,6 +170,7 @@
       ],
       "prepareForIndexing" : false,
       "sources" : [
+        "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeMark.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/LaunchAtLogin.swift",
@@ -487,6 +497,7 @@
       "claude_usage_tab",
       "-incremental",
       "-c",
+      "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeMark.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/LaunchAtLogin.swift",
@@ -742,6 +753,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeMark.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift"
         },
         {
@@ -781,6 +796,10 @@
         {
           "kind" : "virtual",
           "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.swift.o"
         },
         {
           "kind" : "file",

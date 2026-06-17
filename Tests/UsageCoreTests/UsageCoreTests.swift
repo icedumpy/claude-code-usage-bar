@@ -162,7 +162,7 @@ private func decodeFixture() throws -> UsageResponse {
 @Suite struct CredentialTests {
     @Test func parsesNestedShape() throws {
         let json = #"{"claudeAiOauth":{"accessToken":"tok123","refreshToken":"ref456","subscriptionType":"max","rateLimitTier":"tier_x"}}"#
-        let c = try KeychainCredentialProvider.parse(Data(json.utf8))
+        let c = try Credentials.parse(Data(json.utf8))
         #expect(c.accessToken == "tok123")
         #expect(c.refreshToken == "ref456")
         #expect(c.subscriptionType == "max")
@@ -170,7 +170,7 @@ private func decodeFixture() throws -> UsageResponse {
 
     @Test func malformedThrows() {
         #expect(throws: (any Error).self) {
-            try KeychainCredentialProvider.parse(Data("{}".utf8))
+            try Credentials.parse(Data("{}".utf8))
         }
     }
 }

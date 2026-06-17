@@ -2,6 +2,12 @@
   "": {
     "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/master.swiftdeps"
   },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeMark.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeMark.swiftdeps"
+  },
   "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift": {
     "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.d",
     "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swift.o",

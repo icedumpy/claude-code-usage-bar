@@ -1,8 +1,8 @@
 import SwiftUI
 import UsageCore
 
-/// Maps API severity to a menu bar emoji dot (keeps color in the menu bar, which
-/// otherwise renders SwiftUI labels monochrome) and a panel accent color.
+/// Maps API severity to UI styling: an emoji dot (used by the `--probe` CLI
+/// output) and the accent color used for the dropdown's limit bars.
 enum SeverityStyle {
     static func dot(_ s: Severity) -> String {
         switch s {

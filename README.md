@@ -117,6 +117,10 @@ own art and it's picked up automatically (no rebuild):
    critical.svg   # red    state
 ```
 
+The app renders whatever SVG is in that folder. It's a normal user-writable
+directory, so only put art you trust there (the app doesn't sanitize SVG
+contents before rendering).
+
 ## Other commands
 
 ```sh
