@@ -1,4 +1,0 @@
-module UsageCore {
-    header "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageCore-Swift.h"
-    requires objc
-}
