@@ -6,24 +6,12 @@ A native macOS menu bar app that shows your Claude Code usage at a glance — th
 rate-limit headroom that `/usage` reports, plus a per-model token/cost breakdown.
 It can also notify you when a limit crosses 80% / 95%.
 
-```
-🟢 19%                         ← menu bar: highest usage-vs-limit %, colored by severity
+<p align="center">
+  <img src="docs/screenshot.png" alt="Claude Usage Bar — menu bar badge and dropdown" width="340">
+</p>
 
-Claude Usage            [Max]
-─────────────────────────────
-5-hour window     19%   resets in 2h 59m   (now)
-Weekly (all)      15%   resets in 4d 2h
-Weekly · Sonnet   17%   resets in 4d 2h
-─────────────────────────────
-This week — by model
-  Opus 4.8     138.5M tok   $405
-  Sonnet 4.6     1.1M tok   $1.26
-  Haiku 4.5      1.1M tok   $0.60
-  Total        140.7M tok   $407
-─────────────────────────────
-[30s ▾]            updated 12:00
-☐ Launch at login   Refresh  Quit
-```
+A colored circle + the 5-hour-window percentage live in the menu bar; click for
+the weekly limits and a per-model token/cost breakdown.
 
 ## What it shows
 
