@@ -132,8 +132,9 @@ swift test                          # run the unit tests (Swift Testing)
 
 This repo is the simplest path — people clone and run `./scripts/install.sh`.
 For a double-click, notarized download you'd need an Apple Developer account
-($99/yr) to Developer-ID-sign and notarize the `.app`. Note the icon's Claude
-mark is Anthropic's trademark — swap in your own art before redistributing.
+($99/yr) to Developer-ID-sign and notarize the `.app`. The default icons are
+plain colored circles (original artwork, no third-party marks), so the repo is
+safe to share as-is.
 
 ## Limitations / future ideas (v1 deliberately omits)
 
