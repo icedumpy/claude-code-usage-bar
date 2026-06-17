@@ -21,7 +21,7 @@ final class UsageStore: ObservableObject {
 
     init(client: UsageFetching,
          credentials: CredentialReading,
-         refreshInterval: TimeInterval = 30) {
+         refreshInterval: TimeInterval = 60) {
         self.client = client
         self.credentials = credentials
         self.refreshInterval = refreshInterval
@@ -31,7 +31,7 @@ final class UsageStore: ObservableObject {
     /// which accesses the item without a blocking keychain-ACL dialog (a freshly
     /// signed app is not in the item's trust list, so the Security-framework path
     /// would prompt on every poll).
-    static func live(refreshInterval: TimeInterval = 30) -> UsageStore {
+    static func live(refreshInterval: TimeInterval = 60) -> UsageStore {
         let creds = ShellCredentialProvider()
         return UsageStore(client: UsageClient(credentials: creds),
                           credentials: creds,
