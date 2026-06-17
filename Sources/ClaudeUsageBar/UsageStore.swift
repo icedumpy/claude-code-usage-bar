@@ -49,7 +49,9 @@ final class UsageStore: ObservableObject {
     private func schedule() {
         timer?.invalidate()
         let t = Timer(timeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshNow() }
+            // Hop to the main actor explicitly — compiler-verified, no reliance
+            // on which thread the timer callback happens to run on.
+            Task { @MainActor in self?.refreshNow() }
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
@@ -62,6 +64,8 @@ final class UsageStore: ObservableObject {
 
         do {
             let usage = try await client.fetch()
+            // Best-effort: only used for the subscription badge. A failure here
+            // is not the signed-out signal — that comes from fetch() throwing.
             let creds = try? credentials.read()
             let since = usage.weeklyWindowStart
                 ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
@@ -84,9 +88,11 @@ final class UsageStore: ObservableObject {
 
     /// Appends the current menu bar text to a log file when CLAUDE_USAGE_LOG is
     /// set. Used only for headless verification of the running GUI app.
+    private static let logFormatter = ISO8601DateFormatter()
+
     private static func debugLog(_ text: String) {
         guard let path = ProcessInfo.processInfo.environment["CLAUDE_USAGE_LOG"] else { return }
-        let line = "\(ISO8601DateFormatter().string(from: Date())) \(text)\n"
+        let line = "\(logFormatter.string(from: Date())) \(text)\n"
         if let data = line.data(using: .utf8) {
             if let h = FileHandle(forWritingAtPath: path) {
                 h.seekToEndOfFile(); h.write(data); try? h.close()

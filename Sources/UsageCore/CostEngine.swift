@@ -12,6 +12,7 @@ public actor CostEngine {
         public let date: Date
         public let model: String
         public let tokens: TokenCounts
+        public let uuid: String?
     }
 
     private struct FileCache {
@@ -32,9 +33,16 @@ public actor CostEngine {
     }
 
     /// Per-model breakdown for transcripts in `[since, now]`, newest cost first.
+    /// Dedupes by `uuid` across all files (a resumed session can write the same
+    /// message into more than one transcript).
     public func breakdown(since: Date, now: Date = Date()) -> [ModelUsage] {
         var tallies: [String: TokenCounts] = [:]
+        var seen = Set<String>()
         for e in collectEntries(since: since) where e.date >= since && e.date <= now {
+            if let uuid = e.uuid {
+                if seen.contains(uuid) { continue }
+                seen.insert(uuid)
+            }
             tallies[e.model, default: TokenCounts()] = tallies[e.model, default: TokenCounts()] + e.tokens
         }
         return CostEngine.makeRows(from: tallies)
@@ -70,7 +78,9 @@ public actor CostEngine {
         }
 
         // Evict caches for files no longer present / now out of window.
-        for key in cache.keys where !liveKeys.contains(key) { cache[key] = nil }
+        // Collect first, then remove — mutating while iterating `cache.keys` is unsafe.
+        let stale = cache.keys.filter { !liveKeys.contains($0) }
+        for key in stale { cache[key] = nil }
         return all
     }
 
@@ -89,11 +99,18 @@ public actor CostEngine {
         var seen = Set<String>()
 
         for line in lines {
+            // Cheap pre-filter: the token usage object only appears on assistant
+            // lines, so skip the (often very large) tool/user lines before the
+            // full JSON parse. This is the difference between a fast and a slow
+            // cold scan over a big transcript history.
+            guard line.contains("\"usage\"") else { continue }
+
             guard let data = line.data(using: .utf8),
                   let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             else { continue }
 
-            if let uuid = obj["uuid"] as? String {
+            let uuid = obj["uuid"] as? String
+            if let uuid {
                 if seen.contains(uuid) { continue }
                 seen.insert(uuid)
             }
@@ -115,7 +132,7 @@ public actor CostEngine {
                 cacheRead: intValue(usage["cache_read_input_tokens"]))
 
             if counts.total == 0 { continue }
-            out.append(Entry(date: date, model: model, tokens: counts))
+            out.append(Entry(date: date, model: model, tokens: counts, uuid: uuid))
         }
         return out
     }

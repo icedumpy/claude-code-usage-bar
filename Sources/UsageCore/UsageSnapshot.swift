@@ -43,7 +43,9 @@ public struct UsageSnapshot: Sendable, Equatable {
             .sorted { order($0) < order($1) }
             .map { l in
                 LimitRow(
-                    id: "\(l.kind)#\(l.modelName ?? "")",
+                    // resetsAt keeps the id unique even if the API returns two
+                    // limits with the same kind+model (else ForEach misbehaves).
+                    id: "\(l.kind)#\(l.modelName ?? "")#\(l.resetsAt?.timeIntervalSince1970 ?? 0)",
                     label: l.displayLabel,
                     percent: l.percent,
                     severity: l.severity,

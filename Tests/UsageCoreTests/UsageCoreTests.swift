@@ -127,7 +127,9 @@ private func decodeFixture() throws -> UsageResponse {
     @Test func displayNames() {
         #expect(PriceTable.displayName(forModelID: "claude-opus-4-8") == "Opus 4.8")
         #expect(PriceTable.displayName(forModelID: "claude-sonnet-4-6") == "Sonnet 4.6")
+        // Trailing date group is ignored.
         #expect(PriceTable.displayName(forModelID: "claude-haiku-4-5-20251001") == "Haiku 4.5")
+        #expect(PriceTable.displayName(forModelID: "claude-opus-4-5-20251001") == "Opus 4.5")
     }
 
     @Test func unknownModelHasNoPrice() {

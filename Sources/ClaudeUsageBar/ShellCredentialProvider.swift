@@ -12,6 +12,8 @@ struct ShellCredentialProvider: CredentialReading {
     }
 
     func read() throws -> Credentials {
+        // Guard against a service name being interpreted as a `security` flag.
+        precondition(!service.hasPrefix("-"), "service name must not start with '-'")
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/security")
         proc.arguments = ["find-generic-password", "-s", service, "-w"]

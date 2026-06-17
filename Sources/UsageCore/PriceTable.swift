@@ -19,9 +19,9 @@ public struct ModelPrice: Sendable {
 
 public enum PriceTable {
     /// Family prices (per 1M tokens). Cache-write ≈ 1.25× input, cache-read ≈ 0.1× input.
-    static let opus = ModelPrice(input: 15, output: 75, cacheWrite: 18.75, cacheRead: 1.5)
-    static let sonnet = ModelPrice(input: 3, output: 15, cacheWrite: 3.75, cacheRead: 0.3)
-    static let haiku = ModelPrice(input: 1, output: 5, cacheWrite: 1.25, cacheRead: 0.1)
+    private static let opus = ModelPrice(input: 15, output: 75, cacheWrite: 18.75, cacheRead: 1.5)
+    private static let sonnet = ModelPrice(input: 3, output: 15, cacheWrite: 3.75, cacheRead: 0.3)
+    private static let haiku = ModelPrice(input: 1, output: 5, cacheWrite: 1.25, cacheRead: 0.1)
 
     /// Map a raw model id (e.g. "claude-opus-4-8") to a price by family.
     /// Returns nil for synthetic/unknown models so they can be skipped.
@@ -37,10 +37,13 @@ public enum PriceTable {
     public static func displayName(forModelID id: String) -> String {
         let m = id.lowercased()
         func ver(_ family: String) -> String {
-            // turn "claude-opus-4-8" -> "Opus 4.8"
-            let digits = id.split(whereSeparator: { !$0.isNumber }).map(String.init)
-            if digits.count >= 2 { return "\(family) \(digits[0]).\(digits[1])" }
-            if digits.count == 1 { return "\(family) \(digits[0])" }
+            // turn "claude-opus-4-8" -> "Opus 4.8". Ignore long numeric groups
+            // (>=5 digits) so a trailing date like "...-20251001" is dropped.
+            let groups = id.split(whereSeparator: { !$0.isNumber })
+                .map(String.init)
+                .filter { $0.count < 5 }
+            if groups.count >= 2 { return "\(family) \(groups[0]).\(groups[1])" }
+            if groups.count == 1 { return "\(family) \(groups[0])" }
             return family
         }
         if m.contains("opus") { return ver("Opus") }

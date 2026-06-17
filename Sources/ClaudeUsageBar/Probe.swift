@@ -7,8 +7,12 @@ enum Probe {
     static func run() -> Int32 {
         let creds = ShellCredentialProvider()
         let client = UsageClient(credentials: creds)
+        // One-shot CLI bridge from async to sync `main`. A semaphore is the
+        // reliable pattern here: only one Task runs, so the cooperative pool is
+        // never saturated. (A RunLoop wait deadlocks — nothing wakes it when the
+        // detached task completes.)
         let sem = DispatchSemaphore(value: 0)
-        var exitCode: Int32 = 0
+        var exitCode: Int32 = 1
 
         Task {
             defer { sem.signal() }
@@ -21,9 +25,9 @@ enum Probe {
                                               breakdown: breakdown,
                                               credentials: try? creds.read())
                 printSnapshot(snap)
+                exitCode = 0
             } catch {
                 FileHandle.standardError.write(Data("probe failed: \(error)\n".utf8))
-                exitCode = 1
             }
         }
         sem.wait()

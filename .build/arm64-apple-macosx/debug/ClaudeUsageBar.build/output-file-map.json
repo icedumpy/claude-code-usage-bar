@@ -8,12 +8,6 @@
     "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp~partial.swiftmodule",
     "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swiftdeps"
   },
-  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/CompositeCredentialProvider.swift": {
-    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.d",
-    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.swift.o",
-    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider~partial.swiftmodule",
-    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.swiftdeps"
-  },
   "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift": {
     "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/DropdownView.d",
     "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/DropdownView.swift.o",

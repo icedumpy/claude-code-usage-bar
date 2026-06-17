@@ -32,10 +32,6 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/CompositeCredentialProvider.swift"
-        },
-        {
-          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift"
         },
         {
@@ -80,7 +76,6 @@
       "moduleOutputPath" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/Modules/ClaudeUsageBar.swiftmodule",
       "objects" : [
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swift.o",
-        "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/DropdownView.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/LaunchAtLogin.swift.o",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/Probe.swift.o",
@@ -133,10 +128,6 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.swift.o"
-        },
-        {
-          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/DropdownView.swift.o"
         },
         {
@@ -171,7 +162,6 @@
       "prepareForIndexing" : false,
       "sources" : [
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift",
-        "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/CompositeCredentialProvider.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/LaunchAtLogin.swift",
         "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/Probe.swift",
@@ -498,7 +488,6 @@
       "-incremental",
       "-c",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/ClaudeUsageBarApp.swift",
-      "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/CompositeCredentialProvider.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/LaunchAtLogin.swift",
       "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/Probe.swift",
@@ -757,10 +746,6 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/CompositeCredentialProvider.swift"
-        },
-        {
-          "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/ClaudeUsageBar/DropdownView.swift"
         },
         {
@@ -800,10 +785,6 @@
         {
           "kind" : "file",
           "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/ClaudeUsageBarApp.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/ClaudeUsageBar.build/CompositeCredentialProvider.swift.o"
         },
         {
           "kind" : "file",
