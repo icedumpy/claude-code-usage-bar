@@ -102,7 +102,32 @@ final class UsageStore: ObservableObject {
         }
     }
 
+    /// Percent text for the menu bar (no emoji — the tinted Claude mark carries
+    /// the color). "…" while loading, "!" when signed out.
+    var menuBarPercent: String {
+        switch phase {
+        case .loading:
+            return "…"
+        case .ok(let snap):
+            return snap.heroPercent.map { Formatting.percent($0) } ?? "—"
+        case .signedOut:
+            return "!"
+        case .error:
+            return lastSnapshot?.heroPercent.map { Formatting.percent($0) } ?? "!"
+        }
+    }
+
+    /// Severity driving the Claude mark's tint.
+    var menuBarSeverity: Severity {
+        switch phase {
+        case .ok(let snap): return snap.heroSeverity
+        case .error: return lastSnapshot?.heroSeverity ?? .unknown
+        case .loading, .signedOut: return .unknown
+        }
+    }
+
     /// The string shown in the menu bar (emoji dot + percent, or a warning).
+    /// Retained for the debug log.
     var menuBarText: String {
         switch phase {
         case .loading:

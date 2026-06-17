@@ -24,10 +24,16 @@ struct ClaudeUsageBarApp: App {
     }
 }
 
-/// The menu bar text. Observes the store so the number updates while closed.
+/// The menu bar label: the Claude sunburst tinted by severity, plus the percent.
+/// Observes the store so both update while the dropdown is closed.
 struct MenuBarLabelView: View {
     @ObservedObject var store: UsageStore
     var body: some View {
-        Text(store.menuBarText)
+        HStack(spacing: 3) {
+            if let icon = ClaudeMark.tinted(store.menuBarSeverity) {
+                Image(nsImage: icon).renderingMode(.original)
+            }
+            Text(store.menuBarPercent)
+        }
     }
 }
