@@ -2,86 +2,105 @@ import Foundation
 
 /// Aggregates token usage from Claude Code JSONL transcripts and computes a
 /// notional API-equivalent dollar figure per model, scoped to a time window.
-public struct CostEngine {
+///
+/// An actor with a per-file cache: each poll only re-parses transcript files
+/// whose modification date changed, so steady-state polling is cheap even with
+/// a large history. Window filtering is applied in-memory over cached entries.
+public actor CostEngine {
+    /// One usage record parsed from a transcript line.
+    public struct Entry: Sendable {
+        public let date: Date
+        public let model: String
+        public let tokens: TokenCounts
+    }
+
+    private struct FileCache {
+        let mtime: Date
+        let entries: [Entry]
+    }
+
     private let projectsDir: URL
-    private let fm = FileManager.default
+    private var cache: [String: FileCache] = [:]
 
     public init(projectsDir: URL? = nil) {
         if let projectsDir {
             self.projectsDir = projectsDir
         } else {
-            self.projectsDir = fm.homeDirectoryForCurrentUser
+            self.projectsDir = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(".claude/projects", isDirectory: true)
         }
     }
 
-    /// Per-model breakdown for transcripts since `since`, newest cost first.
+    /// Per-model breakdown for transcripts in `[since, now]`, newest cost first.
     public func breakdown(since: Date, now: Date = Date()) -> [ModelUsage] {
-        let tallies = aggregateFiles(since: since, now: now)
+        var tallies: [String: TokenCounts] = [:]
+        for e in collectEntries(since: since) where e.date >= since && e.date <= now {
+            tallies[e.model, default: TokenCounts()] = tallies[e.model, default: TokenCounts()] + e.tokens
+        }
         return CostEngine.makeRows(from: tallies)
     }
 
-    /// Build sorted breakdown rows from raw per-model tallies. Pure + testable.
-    public static func makeRows(from tallies: [String: TokenCounts]) -> [ModelUsage] {
-        tallies.compactMap { (modelID, tokens) -> ModelUsage? in
-            guard let price = PriceTable.price(forModelID: modelID) else { return nil }
-            return ModelUsage(
-                modelID: modelID,
-                displayName: PriceTable.displayName(forModelID: modelID),
-                tokens: tokens,
-                costUSD: PriceTable.cost(price: price, tokens: tokens))
-        }
-        .sorted { $0.costUSD > $1.costUSD }
-    }
-
-    /// Read recent transcript files and aggregate. Files untouched since before
-    /// the window are skipped via modification date for efficiency.
-    private func aggregateFiles(since: Date, now: Date) -> [String: TokenCounts] {
+    /// Gather entries from all recent transcript files, using the cache where
+    /// the file is unchanged. Files older than the window are dropped.
+    private func collectEntries(since: Date) -> [Entry] {
+        let fm = FileManager.default
         guard let enumerator = fm.enumerator(
             at: projectsDir,
             includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
             options: [.skipsHiddenFiles]
-        ) else { return [:] }
+        ) else { return [] }
 
-        var tallies: [String: TokenCounts] = [:]
-        var seen = Set<String>()
+        var all: [Entry] = []
+        var liveKeys = Set<String>()
 
         for case let url as URL in enumerator {
             guard url.pathExtension == "jsonl" else { continue }
-            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey])
-            if let mod = values?.contentModificationDate, mod < since { continue }
-            guard let content = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            CostEngine.aggregate(lines: content.split(separator: "\n", omittingEmptySubsequences: true).map(String.init),
-                                 since: since, now: now,
-                                 into: &tallies, seen: &seen)
+            let key = url.path
+            let mtime = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            if mtime < since { cache[key] = nil; continue }
+            liveKeys.insert(key)
+
+            if let cached = cache[key], cached.mtime == mtime {
+                all.append(contentsOf: cached.entries)
+            } else {
+                let entries = CostEngine.parseFile(url)
+                cache[key] = FileCache(mtime: mtime, entries: entries)
+                all.append(contentsOf: entries)
+            }
         }
-        return tallies
+
+        // Evict caches for files no longer present / now out of window.
+        for key in cache.keys where !liveKeys.contains(key) { cache[key] = nil }
+        return all
     }
 
-    /// Pure aggregation over JSONL lines. Dedupes by `uuid`, filters by
-    /// timestamp window, skips synthetic/unpriced models and malformed lines.
-    public static func aggregate(lines: [String],
-                                 since: Date,
-                                 now: Date = Date(),
-                                 into tallies: inout [String: TokenCounts],
-                                 seen: inout Set<String>) {
+    private static func parseFile(_ url: URL) -> [Entry] {
+        guard let content = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+        let lines = content.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        return parseEntries(lines: lines)
+    }
+
+    // MARK: - Pure helpers (unit tested)
+
+    /// Parse transcript lines into usage entries. Dedupes by `uuid`, skips
+    /// synthetic/zero-usage and malformed lines. No time filtering here.
+    public static func parseEntries(lines: [String]) -> [Entry] {
+        var out: [Entry] = []
+        var seen = Set<String>()
+
         for line in lines {
             guard let data = line.data(using: .utf8),
                   let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             else { continue }
 
-            // dedup
             if let uuid = obj["uuid"] as? String {
                 if seen.contains(uuid) { continue }
                 seen.insert(uuid)
             }
 
-            // time window
-            if let ts = obj["timestamp"] as? String, let date = ISO8601DateParser.parse(ts) {
-                if date < since || date > now { continue }
-            } else {
-                continue // no usable timestamp -> can't scope, skip
-            }
+            guard let tsString = obj["timestamp"] as? String,
+                  let date = ISO8601DateParser.parse(tsString)
+            else { continue }
 
             guard let message = obj["message"] as? [String: Any],
                   let model = message["model"] as? String,
@@ -96,16 +115,32 @@ public struct CostEngine {
                 cacheRead: intValue(usage["cache_read_input_tokens"]))
 
             if counts.total == 0 { continue }
-            tallies[model, default: TokenCounts()] = tallies[model, default: TokenCounts()] + counts
+            out.append(Entry(date: date, model: model, tokens: counts))
         }
+        return out
     }
 
+    /// Tally parsed lines into per-model token counts within `[since, now]`.
     /// Convenience pure entry point for tests.
     public static func aggregate(lines: [String], since: Date, now: Date = Date()) -> [String: TokenCounts] {
-        var t: [String: TokenCounts] = [:]
-        var seen = Set<String>()
-        aggregate(lines: lines, since: since, now: now, into: &t, seen: &seen)
-        return t
+        var tallies: [String: TokenCounts] = [:]
+        for e in parseEntries(lines: lines) where e.date >= since && e.date <= now {
+            tallies[e.model, default: TokenCounts()] = tallies[e.model, default: TokenCounts()] + e.tokens
+        }
+        return tallies
+    }
+
+    /// Build sorted breakdown rows from raw per-model tallies. Pure + testable.
+    public static func makeRows(from tallies: [String: TokenCounts]) -> [ModelUsage] {
+        tallies.compactMap { (modelID, tokens) -> ModelUsage? in
+            guard let price = PriceTable.price(forModelID: modelID) else { return nil }
+            return ModelUsage(
+                modelID: modelID,
+                displayName: PriceTable.displayName(forModelID: modelID),
+                tokens: tokens,
+                costUSD: PriceTable.cost(price: price, tokens: tokens))
+        }
+        .sorted { $0.costUSD > $1.costUSD }
     }
 
     private static func intValue(_ any: Any?) -> Int {

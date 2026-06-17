@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import LocalAuthentication
 
 public struct Credentials: Sendable, Equatable {
     public let accessToken: String
@@ -37,11 +38,16 @@ public struct KeychainCredentialProvider: CredentialReading {
     }
 
     public func read() throws -> Credentials {
+        // Never show a blocking auth dialog; return an error instead so the
+        // caller can fall back to a prompt-free path.
+        let context = LAContext()
+        context.interactionNotAllowed = true
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationContext as String: context,
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)

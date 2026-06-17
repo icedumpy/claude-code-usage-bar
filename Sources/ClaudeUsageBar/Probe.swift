@@ -16,7 +16,7 @@ enum Probe {
                 let usage = try await client.fetch()
                 let since = usage.weeklyWindowStart
                     ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
-                let breakdown = CostEngine().breakdown(since: since)
+                let breakdown = await CostEngine().breakdown(since: since)
                 let snap = UsageSnapshot.make(usage: usage,
                                               breakdown: breakdown,
                                               credentials: try? creds.read())

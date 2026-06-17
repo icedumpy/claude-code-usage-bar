@@ -14,6 +14,7 @@ final class UsageStore: ObservableObject {
 
     private let client: UsageFetching
     private let credentials: CredentialReading
+    private let costEngine = CostEngine()
     private var timer: Timer?
     private var inFlight = false
 
@@ -25,9 +26,12 @@ final class UsageStore: ObservableObject {
         self.refreshInterval = refreshInterval
     }
 
-    /// Convenience production wiring.
+    /// Convenience production wiring. Reads the credential via `/usr/bin/security`,
+    /// which accesses the item without a blocking keychain-ACL dialog (a freshly
+    /// signed app is not in the item's trust list, so the Security-framework path
+    /// would prompt on every poll).
     static func live(refreshInterval: TimeInterval = 30) -> UsageStore {
-        let creds = KeychainCredentialProvider()
+        let creds = ShellCredentialProvider()
         return UsageStore(client: UsageClient(credentials: creds),
                           credentials: creds,
                           refreshInterval: refreshInterval)
@@ -61,10 +65,8 @@ final class UsageStore: ObservableObject {
             let creds = try? credentials.read()
             let since = usage.weeklyWindowStart
                 ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
-            // File IO off the main actor.
-            let breakdown = await Task.detached(priority: .utility) {
-                CostEngine().breakdown(since: since)
-            }.value
+            // CostEngine is an actor: file IO + caching run off the main actor.
+            let breakdown = await costEngine.breakdown(since: since)
             let snapshot = UsageSnapshot.make(usage: usage,
                                               breakdown: breakdown,
                                               credentials: creds)
@@ -76,6 +78,21 @@ final class UsageStore: ObservableObject {
         } catch {
             // Keep the last good snapshot visible; flag the transient failure.
             phase = .error(Self.describe(error))
+        }
+        Self.debugLog(menuBarText)
+    }
+
+    /// Appends the current menu bar text to a log file when CLAUDE_USAGE_LOG is
+    /// set. Used only for headless verification of the running GUI app.
+    private static func debugLog(_ text: String) {
+        guard let path = ProcessInfo.processInfo.environment["CLAUDE_USAGE_LOG"] else { return }
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(text)\n"
+        if let data = line.data(using: .utf8) {
+            if let h = FileHandle(forWritingAtPath: path) {
+                h.seekToEndOfFile(); h.write(data); try? h.close()
+            } else {
+                try? data.write(to: URL(fileURLWithPath: path))
+            }
         }
     }
 
