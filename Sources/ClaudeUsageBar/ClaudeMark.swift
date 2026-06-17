@@ -16,22 +16,39 @@ enum ClaudeMark {
 
     private static var cache: [Severity: NSImage] = [:]
 
-    /// A sunburst filled with the severity color on a transparent background.
-    static func tinted(_ severity: Severity) -> NSImage? {
-        if let cached = cache[severity] { return cached }
-        guard let mask else { return nil }
-        let size = mask.size
-        let out = NSImage(size: size)
+    /// The sunburst recolored cream (#FCF2EE), like the real Claude icon, to sit
+    /// on top of the colored tile.
+    private static let creamMark: NSImage? = {
+        guard let mask, let out = mask.copy() as? NSImage else { return nil }
         out.lockFocus()
-        nsColor(severity).set()
-        NSRect(origin: .zero, size: size).fill()
-        // Keep the fill only where the sunburst mask is opaque.
-        mask.draw(in: NSRect(origin: .zero, size: size), from: .zero,
-                  operation: .destinationIn, fraction: 1.0)
+        NSColor(srgbRed: 0.988, green: 0.949, blue: 0.933, alpha: 1).set()
+        NSRect(origin: .zero, size: out.size).fill(using: .sourceAtop)
         out.unlockFocus()
         out.isTemplate = false
-        cache[severity] = out
         return out
+    }()
+
+    /// An app-badge style icon: a rounded-square tile filled with the severity
+    /// color (the big, glanceable block) with the cream Claude sunburst on top.
+    static func tinted(_ severity: Severity) -> NSImage? {
+        if let cached = cache[severity] { return cached }
+        let side: CGFloat = 18
+        let img = NSImage(size: NSSize(width: side, height: side))
+        img.lockFocus()
+        // colored rounded tile
+        nsColor(severity).setFill()
+        NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: side, height: side),
+                     xRadius: 4.5, yRadius: 4.5).fill()
+        // cream sunburst centered at ~74%
+        if let creamMark {
+            let s = side * 0.74
+            let o = (side - s) / 2
+            creamMark.draw(in: NSRect(x: o, y: o, width: s, height: s))
+        }
+        img.unlockFocus()
+        img.isTemplate = false
+        cache[severity] = img
+        return img
     }
 
     static func nsColor(_ s: Severity) -> NSColor {
