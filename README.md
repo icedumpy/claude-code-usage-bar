@@ -66,24 +66,70 @@ prompt on every poll.)
   `ObservableObject`, polling), `DropdownView`, `AppDelegate` (starts polling at
   launch), `ShellCredentialProvider`, `Probe` (`--probe` CLI mode).
 
-## Build & run
+## Requirements
 
-Requires the Swift toolchain (Command Line Tools is enough — no full Xcode).
+- macOS 13 or later (Apple Silicon or Intel — the build is universal).
+- The Swift toolchain. Xcode Command Line Tools is enough (`xcode-select --install`) — no full Xcode needed.
+- **Claude Code installed and logged in.** The app reads your usage from the
+  Claude Code OAuth token in your Keychain; without it there's no data.
 
-```sh
-swift test                 # run the unit tests (Swift Testing)
-./scripts/build_app.sh     # build + assemble dist/ClaudeUsageBar.app
-open dist/ClaudeUsageBar.app
-```
-
-To install: copy `dist/ClaudeUsageBar.app` to `/Applications`, launch it, and
-toggle **Launch at login** in the dropdown so it starts with your Mac.
-
-Headless check of the live pipeline (prints what the menu bar would show):
+## Install
 
 ```sh
-.build/release/ClaudeUsageBar --probe
+git clone <repo-url> claude-usage-tab
+cd claude-usage-tab
+./scripts/install.sh        # builds universal .app, installs to /Applications, launches
 ```
+
+Then open the dropdown and tick **Launch at login** so it starts with your Mac.
+
+First launch may show a Gatekeeper prompt (the app is ad-hoc signed, not
+notarized): right-click the app in `/Applications` → **Open** once, or run
+`xattr -dr com.apple.quarantine /Applications/ClaudeUsageBar.app`.
+
+## Updating
+
+```sh
+git pull
+./scripts/install.sh        # rebuilds and replaces the installed app
+```
+
+Your custom icons and any settings live in
+`~/Library/Application Support/ClaudeUsageBar/` and are **not** touched by an
+update, so they survive upgrades.
+
+## Privacy
+
+The app has no embedded secrets and no server of its own. Your OAuth token is
+read at runtime from *your* Keychain and sent only to Anthropic's API — exactly
+as Claude Code does — never to the author or any third party. The token/cost
+breakdown is computed entirely from local files on your machine.
+
+## Custom icons
+
+The menu bar icon is loaded from three SVG files (one per severity); drop in your
+own art and it's picked up automatically (no rebuild):
+
+```
+~/Library/Application Support/ClaudeUsageBar/icons/
+   normal.svg     # green  state
+   warning.svg    # yellow state
+   critical.svg   # red    state
+```
+
+## Other commands
+
+```sh
+swift test                          # run the unit tests (Swift Testing)
+.build/release/ClaudeUsageBar --probe   # print what the menu bar would show
+```
+
+## Distributing to others
+
+This repo is the simplest path — people clone and run `./scripts/install.sh`.
+For a double-click, notarized download you'd need an Apple Developer account
+($99/yr) to Developer-ID-sign and notarize the `.app`. Note the icon's Claude
+mark is Anthropic's trademark — swap in your own art before redistributing.
 
 ## Limitations / future ideas (v1 deliberately omits)
 

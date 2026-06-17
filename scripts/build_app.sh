@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build ClaudeUsageBar and assemble a menu-bar .app bundle (no Xcode required).
+# Build ClaudeUsageBar as a UNIVERSAL (Apple Silicon + Intel) menu-bar .app
+# bundle. No Xcode required — builds each arch with SwiftPM and lipo's them.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -7,16 +8,21 @@ ROOT="$(pwd)"
 APP_NAME="ClaudeUsageBar"
 BUNDLE_ID="com.pongporamat.claudeusagebar"
 VERSION="1.0.0"
-BUILD_DIR="$ROOT/.build/release"
 APP="$ROOT/dist/${APP_NAME}.app"
 
-echo "==> swift build -c release"
-swift build -c release
+echo "==> building arm64"
+swift build -c release --arch arm64
+echo "==> building x86_64"
+swift build -c release --arch x86_64
 
-echo "==> assembling bundle at $APP"
+ARM="$(swift build -c release --arch arm64 --show-bin-path)/$APP_NAME"
+X86="$(swift build -c release --arch x86_64 --show-bin-path)/$APP_NAME"
+
+echo "==> assembling universal bundle at $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BUILD_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
+lipo -create "$ARM" "$X86" -output "$APP/Contents/MacOS/$APP_NAME"
+lipo -info "$APP/Contents/MacOS/$APP_NAME"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
