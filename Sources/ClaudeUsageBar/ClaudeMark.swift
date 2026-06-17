@@ -1,62 +1,58 @@
 import AppKit
 import UsageCore
 
-/// The Claude sunburst, embedded as a small alpha mask (extracted from
-/// Claude-ai-icon.svg) and tinted to the severity color at runtime. Non-template
-/// so the menu bar keeps our specific green/yellow/red instead of auto-tinting.
+/// Loads the menu bar icon from three SVG files on disk — one per severity —
+/// so the user can drop in their own colored artwork without rebuilding.
+/// Files live in ~/Library/Application Support/ClaudeUsageBar/icons/:
+///   normal.svg (green), warning.svg (yellow), critical.svg (red).
+/// Missing files are seeded with the bundled Claude icon as a placeholder.
 enum ClaudeMark {
-    private static let base64 =
-        "iVBORw0KGgoAAAANSUhEUgAAADYAAAA2CAYAAACMRWrdAAAABmJLR0QA/wD/AP+gvaeTAAAEo0lEQVRoge2Za4hVVRTHf7ecUtNx7DFp76BsiiBJhECKGBITe0hl9BL7EFaTZvRw+tKDPvRQmyQKelKNRUzJEApRRmApfRjxQeWMVKg0PiZxHLXyNbd7+7D24ayz7z7nnjtzzulD5w+be869Y+f8z65kZ2ufvfba+0KOHDly5MgRGy1AF7ASuDJmnYtSY5MQrgUGgbIpPwOFCPsC8IWxfTZ1dsPAcnynvDI9wn66sisCo9MgdVICbfzkkD0WYa+dHgCOJMAhFTQChwiOWAm4PMT+Y2W3PqLdG4D5wBWJMR0CFlA5Hd8JsV2jbN4PsXka+ThlYBswKkmyteBkYAtBx44io2lD2z3u0Ls+UkvylIOYA9wOnO7QXe8g9JLDbo/SN1u6O4B/HO1MGz71cCxSHf0OXOOw+dwi9BfBUSsAJ/DX4Xilm4qMsu1UNzIjUsO7VoeDQKtlcz7wt2W3TOknKPl2JW8Eeql06k8yCB73OjouAysI7kUvWvojwESjm6LknUZWB6x1tFtCpn0meAI45iDxI9BkbOqBfZb+daObrWRe1uHa4MvAq+m6UomrkHnvmjbzjI0d2Y4C5wEPK9ktwG34YV2X9chIZo7TkH3K9aU/QoLCL5a8DXhGvTcjmYddvx+4IDtX3LgRiZA2uR7gNUu2g+C0s7MVb13dmqkHERgHvId7StlldxV9WLbiYQSSqk2sYpcoZuAO2XHLAHCWaq8BSZifBNqBzfiB6xhwf8r+BNBgSAzFsQ7gEWSN9lB9BiyIIhJ1IAQ4B9lL+oEDyFc9oJ5LIfVmA2/jzhWHg+PISX0tsvEfDjOs5tinwF0R+oOIg4fN7y5gL7KW6oClcRk7UEIi60ZVNiBbx7AxCdjJ0NdNLeUE8AOwBLgZd6IdG9VGzMNoYKwp48zvKeZ5FDASSVTrjX09cCGShsVBN/AZsiX0I1POwyFgv5GHTr2scAmwinRGdSdwZ2aeGDQgi/p4jYSXIFFuJfBHzDr3ZOFQnSG23+q8E/gqBslBi2gT8AAS+reH1GlP2SdmIfuO7rQPOW0/qmRdIQS9UgQeDOnjXOBu4A1gHeJ0aklyE/CNg+AK4AwkyS0aWQ/wkHk+iAQBe+14z//ZJWoBWIgcIDW5XmT0QHK5Pvz0ZzLwsnn/FnjKqrsY+FW9v0kyd56x0UjlKJWAt/BD/QiCJ+JFRt5p3j9BtoptymYPcCnwnZJ1GLtM4H11r/yG3E5pvKL0q/H3yq1G1mbeZ1pttSOOfKhkX5LSFbiNucgI7UOO7nan+kTci6w1jJ33x8ViZd9B0LmbkA/xgmpnHZIIpI6RIfLL8A+PReA6pZuGT36ekjcS3CJ2I3shSCLtnbA3kXxCHQtj8KeaK7LpO8kZlu4+gqP2gdJdjCS+ZeC5xFlXQYHglFpD5QWnPqNNdrSxmqBzM5XuVOB54OokScdBiyLUhSTINvSt1gSH/myCqdTXqTCtER6hbuBMh34s/n18kfDr6ln4AWNr8jRrRxvwPXJv6EIzwVQrCq2mrfmJsUsRrfiObcmq0yzSlo3qeVcG/QEp/z1jsAM5n/UhozeQQZ85cuTIkeP/gX8By9JCCmLPqKgAAAAASUVORK5CYII="
-
-    private static let mask: NSImage? = {
-        guard let data = Data(base64Encoded: base64), let img = NSImage(data: data) else { return nil }
-        img.size = NSSize(width: 18, height: 18)
-        return img
+    static let iconsDir: URL = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory,
+                                            in: .userDomainMask).first!
+        return base.appendingPathComponent("ClaudeUsageBar/icons", isDirectory: true)
     }()
 
-    private static var cache: [Severity: NSImage] = [:]
+    static let fileNames = ["normal.svg", "warning.svg", "critical.svg"]
 
-    /// The sunburst recolored cream (#FCF2EE), like the real Claude icon, to sit
-    /// on top of the colored tile.
-    private static let creamMark: NSImage? = {
-        guard let mask, let out = mask.copy() as? NSImage else { return nil }
-        out.lockFocus()
-        NSColor(srgbRed: 0.988, green: 0.949, blue: 0.933, alpha: 1).set()
-        NSRect(origin: .zero, size: out.size).fill(using: .sourceAtop)
-        out.unlockFocus()
-        out.isTemplate = false
-        return out
-    }()
-
-    /// An app-badge style icon: a rounded-square tile filled with the severity
-    /// color (the big, glanceable block) with the cream Claude sunburst on top.
-    static func tinted(_ severity: Severity) -> NSImage? {
-        if let cached = cache[severity] { return cached }
-        let side: CGFloat = 18
-        let img = NSImage(size: NSSize(width: side, height: side))
-        img.lockFocus()
-        // colored rounded tile
-        nsColor(severity).setFill()
-        NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: side, height: side),
-                     xRadius: 4.5, yRadius: 4.5).fill()
-        // cream sunburst centered at ~74%
-        if let creamMark {
-            let s = side * 0.74
-            let o = (side - s) / 2
-            creamMark.draw(in: NSRect(x: o, y: o, width: s, height: s))
-        }
-        img.unlockFocus()
-        img.isTemplate = false
-        cache[severity] = img
-        return img
-    }
-
-    static func nsColor(_ s: Severity) -> NSColor {
+    private static func fileName(for s: Severity) -> String {
         switch s {
-        case .normal: return .systemGreen
-        case .warning: return .systemYellow
-        case .severe, .critical: return .systemRed
-        case .unknown: return .secondaryLabelColor
+        case .warning: return "warning.svg"
+        case .severe, .critical: return "critical.svg"
+        case .normal, .unknown: return "normal.svg"
         }
     }
+
+    /// Create the icons folder and seed any missing file with the placeholder.
+    static func ensurePlaceholders() {
+        try? FileManager.default.createDirectory(at: iconsDir, withIntermediateDirectories: true)
+        for name in fileNames {
+            let url = iconsDir.appendingPathComponent(name)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                try? placeholderSVG.data(using: .utf8)?.write(to: url)
+            }
+        }
+    }
+
+    private static var cache: [String: (mtime: Date, image: NSImage)] = [:]
+
+    /// The icon for a severity, loaded from its SVG file. Cached and reloaded
+    /// automatically when the file changes (so editing the SVG takes effect).
+    static func icon(for severity: Severity) -> NSImage? {
+        let url = iconsDir.appendingPathComponent(fileName(for: severity))
+        let mtime = (try? url.resourceValues(forKeys: [.contentModificationDateKey])
+            .contentModificationDate) ?? .distantPast
+        let key = url.path
+        if let cached = cache[key], cached.mtime == mtime { return cached.image }
+        guard let img = NSImage(contentsOf: url) else { return nil }
+        img.size = NSSize(width: 18, height: 18)
+        img.isTemplate = false   // keep the SVG's own colors
+        cache[key] = (mtime, img)
+        return img
+    }
+
+    /// Bundled Claude app icon, used to seed placeholder files.
+    static let placeholderSVG = #"""
+<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 509.64"><path fill="#D77655" d="M115.612 0h280.775C459.974 0 512 52.026 512 115.612v278.415c0 63.587-52.026 115.612-115.613 115.612H115.612C52.026 509.639 0 457.614 0 394.027V115.612C0 52.026 52.026 0 115.612 0z"/><path fill="#FCF2EE" fill-rule="nonzero" d="M142.27 316.619l73.655-41.326 1.238-3.589-1.238-1.996-3.589-.001-12.31-.759-42.084-1.138-36.498-1.516-35.361-1.896-8.897-1.895-8.34-10.995.859-5.484 7.482-5.03 10.717.935 23.683 1.617 35.537 2.452 25.782 1.517 38.193 3.968h6.064l.86-2.451-2.073-1.517-1.618-1.517-36.776-24.922-39.81-26.338-20.852-15.166-11.273-7.683-5.687-7.204-2.451-15.721 10.237-11.273 13.75.935 3.513.936 13.928 10.716 29.749 23.027 38.848 28.612 5.687 4.727 2.275-1.617.278-1.138-2.553-4.271-21.13-38.193-22.546-38.848-10.035-16.101-2.654-9.655c-.935-3.968-1.617-7.304-1.617-11.374l11.652-15.823 6.445-2.073 15.545 2.073 6.547 5.687 9.655 22.092 15.646 34.78 24.265 47.291 7.103 14.028 3.791 12.992 1.416 3.968 2.449-.001v-2.275l1.997-26.641 3.69-32.707 3.589-42.084 1.239-11.854 5.863-14.206 11.652-7.683 9.099 4.348 7.482 10.716-1.036 6.926-4.449 28.915-8.72 45.294-5.687 30.331h3.313l3.792-3.791 15.342-20.372 25.782-32.227 11.374-12.789 13.27-14.129 8.517-6.724 16.1-.001 11.854 17.617-5.307 18.199-16.581 21.029-13.75 17.819-19.716 26.54-12.309 21.231 1.138 1.694 2.932-.278 44.536-9.479 24.062-4.347 28.714-4.928 12.992 6.066 1.416 6.167-5.106 12.613-30.71 7.583-36.018 7.204-53.636 12.689-.657.48.758.935 24.164 2.275 10.337.556h25.301l47.114 3.514 12.309 8.139 7.381 9.959-1.238 7.583-18.957 9.655-25.579-6.066-59.702-14.205-20.474-5.106-2.83-.001v1.694l17.061 16.682 31.266 28.233 39.152 36.397 1.997 8.999-5.03 7.102-5.307-.758-34.401-25.883-13.27-11.651-30.053-25.302-1.996-.001v2.654l6.926 10.136 36.574 54.975 1.895 16.859-2.653 5.485-9.479 3.311-10.414-1.895-21.408-30.054-22.092-33.844-17.819-30.331-2.173 1.238-10.515 113.261-4.929 5.788-11.374 4.348-9.478-7.204-5.03-11.652 5.03-23.027 6.066-30.052 4.928-23.886 4.449-29.674 2.654-9.858-.177-.657-2.173.278-22.37 30.71-34.021 45.977-26.919 28.815-6.445 2.553-11.173-5.789 1.037-10.337 6.243-9.2 37.257-47.392 22.47-29.371 14.508-16.961-.101-2.451h-.859l-98.954 64.251-17.618 2.275-7.583-7.103.936-11.652 3.589-3.791 29.749-20.474-.101.102.024.101z"/></svg>
+"""#
 }

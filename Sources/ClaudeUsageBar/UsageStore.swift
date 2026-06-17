@@ -8,6 +8,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var phase: AppPhase = .loading
     @Published private(set) var lastSnapshot: UsageSnapshot?
     @Published private(set) var lastUpdated: Date?
+    @Published private(set) var isRefreshing = false
     @Published var refreshInterval: TimeInterval {
         didSet { schedule() }
     }
@@ -60,7 +61,10 @@ final class UsageStore: ObservableObject {
     func refresh() async {
         if inFlight { return }
         inFlight = true
-        defer { inFlight = false }
+        isRefreshing = true
+        // Always advance the "checked" time so a manual Refresh is visibly
+        // responsive even when the fetch fails (e.g. a transient rate limit).
+        defer { inFlight = false; isRefreshing = false; lastUpdated = Date() }
 
         do {
             let usage = try await client.fetch()
@@ -75,12 +79,12 @@ final class UsageStore: ObservableObject {
                                               breakdown: breakdown,
                                               credentials: creds)
             lastSnapshot = snapshot
-            lastUpdated = Date()
             phase = .ok(snapshot)
         } catch UsageError.unauthorized, CredentialError.notFound {
             phase = .signedOut
         } catch {
-            // Keep the last good snapshot visible; flag the transient failure.
+            // Keep the last good snapshot visible; the transient failure is not
+            // surfaced as a scary banner — we just keep showing last-known data.
             phase = .error(Self.describe(error))
         }
         Self.debugLog(menuBarText)

@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = UsageStore.live()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ClaudeMark.ensurePlaceholders()
         store.start()
     }
 }
@@ -30,7 +31,7 @@ struct MenuBarLabelView: View {
     @ObservedObject var store: UsageStore
     var body: some View {
         HStack(spacing: 3) {
-            if let icon = ClaudeMark.tinted(store.menuBarSeverity) {
+            if let icon = ClaudeMark.icon(for: store.menuBarSeverity) {
                 Image(nsImage: icon).renderingMode(.original)
             }
             Text(store.menuBarPercent)

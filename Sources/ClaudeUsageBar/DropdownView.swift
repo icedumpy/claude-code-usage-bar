@@ -3,6 +3,7 @@ import UsageCore
 
 struct DropdownView: View {
     @ObservedObject var store: UsageStore
+    @State private var launchAtLogin = LaunchAtLogin.isEnabled
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -42,23 +43,20 @@ struct DropdownView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         case .ok(let snap):
-            snapshotView(snap, stale: nil)
-        case .error(let msg):
+            snapshotView(snap)
+        case .error:
+            // No scary banner — just keep showing the last-known data.
             if let snap = store.lastSnapshot {
-                snapshotView(snap, stale: msg)
+                snapshotView(snap)
             } else {
-                Label(msg, systemImage: "wifi.exclamationmark").foregroundStyle(.secondary)
+                HStack { ProgressView().controlSize(.small); Text("Updating…").foregroundStyle(.secondary) }
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 8)
             }
         }
     }
 
-    private func snapshotView(_ snap: UsageSnapshot, stale: String?) -> some View {
+    private func snapshotView(_ snap: UsageSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let stale {
-                Text("\(stale) · showing last known")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-
             VStack(spacing: 8) {
                 ForEach(snap.limitRows) { row in
                     LimitRowView(row: row)
@@ -111,12 +109,18 @@ struct DropdownView: View {
                 }
             }
             HStack {
-                Toggle("Launch at login", isOn: Binding(
-                    get: { LaunchAtLogin.isEnabled },
-                    set: { LaunchAtLogin.set($0) }))
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .toggleStyle(.checkbox).font(.caption)
+                    .onChange(of: launchAtLogin) { newValue in
+                        LaunchAtLogin.set(newValue)
+                        // Reconcile with the real status; if register/unregister
+                        // failed, the checkbox snaps back to the true state.
+                        let actual = LaunchAtLogin.isEnabled
+                        if actual != newValue { launchAtLogin = actual }
+                    }
                 Spacer()
-                Button("Refresh") { store.refreshNow() }
+                Button(store.isRefreshing ? "Refreshing…" : "Refresh") { store.refreshNow() }
+                    .disabled(store.isRefreshing)
                 Button("Quit") { NSApplication.shared.terminate(nil) }
             }
         }
