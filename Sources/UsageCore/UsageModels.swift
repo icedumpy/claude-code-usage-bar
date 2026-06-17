@@ -112,6 +112,12 @@ public struct UsageResponse: Decodable, Sendable {
         }
     }
 
+    /// The 5-hour (session) limit — what the menu bar shows by default. Weekly
+    /// limits are still available in the dropdown.
+    public var sessionLimit: Limit? {
+        limits.first { $0.kind == "session" || $0.group == "session" }
+    }
+
     /// Start of the current weekly window, derived from the weekly reset time.
     /// Cost breakdown is scoped to this so the dropdown tells one coherent story.
     public var weeklyWindowStart: Date? {

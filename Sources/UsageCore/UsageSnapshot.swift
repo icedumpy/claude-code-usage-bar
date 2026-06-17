@@ -28,7 +28,9 @@ public struct UsageSnapshot: Sendable, Equatable {
                             breakdown: [ModelUsage],
                             credentials: Credentials? = nil,
                             now: Date = Date()) -> UsageSnapshot {
-        let hero = usage.heroLimit
+        // The menu bar shows the 5-hour window; weekly limits live in the
+        // dropdown. Fall back to the highest limit only if there's no session row.
+        let hero = usage.sessionLimit ?? usage.heroLimit
 
         // Order rows: session first, then weekly-all, then scoped models.
         let order: (Limit) -> Int = { l in

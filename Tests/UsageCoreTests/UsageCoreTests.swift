@@ -187,11 +187,12 @@ private func decodeFixture() throws -> UsageResponse {
         let breakdown = CostEngine.makeRows(from: ["claude-opus-4-8": TokenCounts(input: 1_000_000, output: 0)])
         let snap = UsageSnapshot.make(usage: u, breakdown: breakdown)
 
-        #expect(snap.heroPercent == 40)
-        #expect(snap.heroSeverity == .warning)
-        #expect(snap.heroLabel == "Weekly · Opus")
+        // Menu bar shows the 5-hour (session) limit, not the higher weekly one.
+        #expect(snap.heroPercent == 5)
+        #expect(snap.heroSeverity == .normal)
+        #expect(snap.heroLabel == "5-hour window")
         #expect(snap.limitRows.count == 2)
-        #expect(snap.limitRows.first { $0.isHero }?.label == "Weekly · Opus")
+        #expect(snap.limitRows.first { $0.isHero }?.label == "5-hour window")
         #expect(abs(snap.totalCostUSD - 15) < 0.001)
         #expect(snap.totalTokens == 1_000_000)
     }
