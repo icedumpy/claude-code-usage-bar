@@ -7,7 +7,7 @@ A native macOS menu bar app that shows your Claude Code usage at a glance — yo
 token/cost breakdown in the dropdown, and a notification before you hit a wall.
 
 <p align="center">
-  <img src="docs/hero.png" alt="Claude Usage Bar — menu bar badge and dropdown" width="340">
+  <img src="docs/hero-race.png" alt="Claude Usage Bar — menu bar badge and dropdown with usage-vs-time race bars" width="340">
 </p>
 
 ## Features
