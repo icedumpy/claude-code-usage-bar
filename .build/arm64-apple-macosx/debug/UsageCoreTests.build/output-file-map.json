@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCoreTests.build/master.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Tests/UsageCoreTests/UsageCoreTests.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCoreTests.build/UsageCoreTests.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCoreTests.build/UsageCoreTests.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCoreTests.build/UsageCoreTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCoreTests.build/UsageCoreTests.swiftdeps"
+  }
+}

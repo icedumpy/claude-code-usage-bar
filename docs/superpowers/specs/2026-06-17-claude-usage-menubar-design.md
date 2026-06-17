@@ -28,6 +28,13 @@ rewrite.
 ## Platform & Stack
 
 - **Native Swift**, SwiftUI `MenuBarExtra` (macOS 13+).
+- Build toolchain: this machine has Swift 6.1 via Command Line Tools but **no
+  full Xcode**, so the app is built with **Swift Package Manager** and the `.app`
+  bundle is assembled manually (Info.plist with `LSUIElement`, ad-hoc codesign).
+  Spike-confirmed: a `MenuBarExtra` app builds with `swift build` and launches as
+  a live menu-bar process. Structure: a UI-free `UsageCore` library target (data
+  layer + models, fully unit-tested) and a `ClaudeUsageBar` executable target
+  (SwiftUI App + UI) depending on it.
 - Rationale: most modern and longest-lasting (first-party Apple, actively
   developed), best glanceability (custom rendering/color), highest feature
   ceiling, ships as a real `.app`. Developer skill is not a constraint because
@@ -119,8 +126,12 @@ thin SwiftUI layer over a single published view-model.
 ### UI layer (SwiftUI `MenuBarExtra`)
 
 6. **Menu bar label**
-   - Shows max utilization across the active limits, colored by the worst
-     `severity` among them: `normal`→green, `warning`→yellow, otherwise red.
+   - Shows the **highest current-usage-vs-limit percentage** across the active
+     limits (5h, weekly-all, weekly-per-model), colored by the worst `severity`
+     among them: `normal`→green, `warning`→yellow, otherwise red.
+   - The user primarily uses **Opus**, so the weekly-Opus limit
+     (`seven_day_opus` / `weekly_scoped` with `scope.model = Opus`) is a
+     first-class row and an explicit hero candidate.
    - Format: `🟢 17%` (icon/dot + percent). `⚠️` when signed out / error.
 
 7. **Dropdown content** (layout from approved design):

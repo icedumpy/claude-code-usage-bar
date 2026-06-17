@@ -1,0 +1,47 @@
+{
+  "": {
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/master.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/CostEngine.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CostEngine.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CostEngine.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CostEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CostEngine.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/CredentialProvider.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CredentialProvider.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CredentialProvider.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CredentialProvider~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/CredentialProvider.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/Formatting.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/Formatting.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/Formatting.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/Formatting~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/Formatting.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/PriceTable.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/PriceTable.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/PriceTable.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/PriceTable~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/PriceTable.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/UsageClient.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageClient.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageClient.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageClient.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/UsageModels.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageModels.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageModels.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageModels.swiftdeps"
+  },
+  "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/Sources/UsageCore/UsageSnapshot.swift": {
+    "dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageSnapshot.d",
+    "object": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageSnapshot.swift.o",
+    "swiftmodule": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageSnapshot~partial.swiftmodule",
+    "swift-dependencies": "/Users/pongporamat.c/Desktop/Personal/side-projects/claude-usage-tab/.build/arm64-apple-macosx/debug/UsageCore.build/UsageSnapshot.swiftdeps"
+  }
+}
