@@ -37,10 +37,11 @@ struct DropdownView: View {
                 .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 8)
         case .signedOut:
             VStack(alignment: .leading, spacing: 4) {
-                Label("Not signed in", systemImage: "exclamationmark.triangle.fill")
+                Label("No usage to show", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                Text("Open Claude Code and log in, then hit Refresh.")
+                Text("Sign in to Claude Code with a Claude subscription, then Refresh. Pay-as-you-go API-key usage isn't reported here.")
                     .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         case .ok(let snap):
             snapshotView(snap)
@@ -118,6 +119,9 @@ struct DropdownView: View {
                         let actual = LaunchAtLogin.isEnabled
                         if actual != newValue { launchAtLogin = actual }
                     }
+                Toggle("Alerts", isOn: $store.alertsEnabled)
+                    .toggleStyle(.checkbox).font(.caption)
+                    .help("Notify at 80% and 95% of a limit")
                 Spacer()
                 Button(store.isRefreshing ? "Refreshing…" : "Refresh") { store.refreshNow() }
                     .disabled(store.isRefreshing)

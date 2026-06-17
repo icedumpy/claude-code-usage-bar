@@ -197,3 +197,37 @@ private func decodeFixture() throws -> UsageResponse {
         #expect(snap.totalTokens == 1_000_000)
     }
 }
+
+@Suite struct ThresholdAlerterTests {
+    func sessionLimits(_ pct: Int) throws -> [Limit] {
+        let json = #"{"limits":[{"kind":"session","group":"session","percent":\#(pct),"severity":"normal","is_active":true}]}"#
+        return try UsageResponse.decoder().decode(UsageResponse.self, from: Data(json.utf8)).limits
+    }
+
+    @Test func firesOnceWhenCrossing80() throws {
+        var state = AlertState()
+        #expect(ThresholdAlerter.evaluate(limits: try sessionLimits(79), state: &state).isEmpty)
+        let a = ThresholdAlerter.evaluate(limits: try sessionLimits(82), state: &state)
+        #expect(a.count == 1)
+        #expect(a.first?.threshold == 80)
+        // does not re-fire while still in the same band
+        #expect(ThresholdAlerter.evaluate(limits: try sessionLimits(85), state: &state).isEmpty)
+    }
+
+    @Test func escalatesTo95() throws {
+        var state = AlertState()
+        _ = ThresholdAlerter.evaluate(limits: try sessionLimits(82), state: &state)
+        let a = ThresholdAlerter.evaluate(limits: try sessionLimits(96), state: &state)
+        #expect(a.first?.threshold == 95)
+    }
+
+    @Test func resetsAfterDropBelow() throws {
+        var state = AlertState()
+        _ = ThresholdAlerter.evaluate(limits: try sessionLimits(96), state: &state)
+        // window reset drops it below all thresholds
+        #expect(ThresholdAlerter.evaluate(limits: try sessionLimits(5), state: &state).isEmpty)
+        // and it can alert again afterwards
+        let a = ThresholdAlerter.evaluate(limits: try sessionLimits(82), state: &state)
+        #expect(a.first?.threshold == 80)
+    }
+}

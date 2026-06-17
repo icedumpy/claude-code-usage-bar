@@ -1,7 +1,10 @@
 # Claude Usage Bar
 
+[![CI](https://github.com/icedumpy/claude-code-usage-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/icedumpy/claude-code-usage-bar/actions/workflows/ci.yml)
+
 A native macOS menu bar app that shows your Claude Code usage at a glance — the
 rate-limit headroom that `/usage` reports, plus a per-model token/cost breakdown.
+It can also notify you when a limit crosses 80% / 95%.
 
 ```
 🟢 19%                         ← menu bar: highest usage-vs-limit %, colored by severity

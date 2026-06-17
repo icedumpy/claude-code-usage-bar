@@ -13,11 +13,18 @@ final class UsageStore: ObservableObject {
         didSet { schedule() }
     }
 
+    @Published var alertsEnabled: Bool = (UserDefaults.standard.object(forKey: "alertsEnabled") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(alertsEnabled, forKey: "alertsEnabled") }
+    }
+
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine = CostEngine()
     private var timer: Timer?
     private var inFlight = false
+    private var alertState = AlertState()
+    private var failureStreak = 0
+    private var backoffUntil: Date?
 
     init(client: UsageFetching,
          credentials: CredentialReading,
@@ -44,22 +51,24 @@ final class UsageStore: ObservableObject {
     }
 
     func refreshNow() {
-        Task { await refresh() }
+        // Manual refresh bypasses backoff.
+        Task { await refresh(force: true) }
     }
 
     private func schedule() {
         timer?.invalidate()
         let t = Timer(timeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            // Hop to the main actor explicitly — compiler-verified, no reliance
-            // on which thread the timer callback happens to run on.
-            Task { @MainActor in self?.refreshNow() }
+            Task { @MainActor in await self?.refresh() }
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }
 
-    func refresh() async {
+    func refresh(force: Bool = false) async {
         if inFlight { return }
+        // Respect backoff after rate-limit/transient failures, unless the user
+        // explicitly hit Refresh.
+        if !force, let until = backoffUntil, Date() < until { return }
         inFlight = true
         isRefreshing = true
         // Always advance the "checked" time so a manual Refresh is visibly
@@ -80,12 +89,23 @@ final class UsageStore: ObservableObject {
                                               credentials: creds)
             lastSnapshot = snapshot
             phase = .ok(snapshot)
+            failureStreak = 0
+            backoffUntil = nil
+            if alertsEnabled {
+                let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState)
+                alerts.forEach { NotificationManager.shared.fire($0) }
+            }
         } catch UsageError.unauthorized, CredentialError.notFound {
             phase = .signedOut
+            failureStreak = 0
+            backoffUntil = nil
         } catch {
-            // Keep the last good snapshot visible; the transient failure is not
-            // surfaced as a scary banner — we just keep showing last-known data.
+            // Keep last-known data visible; back off (exponential, capped at
+            // 15 min) so repeated rate limits don't hammer the endpoint.
             phase = .error(Self.describe(error))
+            failureStreak += 1
+            backoffUntil = Date().addingTimeInterval(
+                min(refreshInterval * pow(2, Double(failureStreak)), 900))
         }
     }
 

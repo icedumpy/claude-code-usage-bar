@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ClaudeMark.ensurePlaceholders()
+        NotificationManager.shared.requestAuthorization()
         store.start()
     }
 }
