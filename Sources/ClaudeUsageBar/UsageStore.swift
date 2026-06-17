@@ -16,6 +16,15 @@ final class UsageStore: ObservableObject {
     @Published var alertsEnabled: Bool = (UserDefaults.standard.object(forKey: "alertsEnabled") as? Bool) ?? true {
         didSet { UserDefaults.standard.set(alertsEnabled, forKey: "alertsEnabled") }
     }
+    @Published var showCountdown: Bool = UserDefaults.standard.bool(forKey: "showCountdown") {
+        didSet { UserDefaults.standard.set(showCountdown, forKey: "showCountdown") }
+    }
+    @Published var warnThreshold: Int = (UserDefaults.standard.object(forKey: "warnThreshold") as? Int) ?? 80 {
+        didSet { UserDefaults.standard.set(warnThreshold, forKey: "warnThreshold") }
+    }
+    @Published var critThreshold: Int = (UserDefaults.standard.object(forKey: "critThreshold") as? Int) ?? 95 {
+        didSet { UserDefaults.standard.set(critThreshold, forKey: "critThreshold") }
+    }
 
     private let client: UsageFetching
     private let credentials: CredentialReading
@@ -92,7 +101,8 @@ final class UsageStore: ObservableObject {
             failureStreak = 0
             backoffUntil = nil
             if alertsEnabled {
-                let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState)
+                let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState,
+                                                       thresholds: [warnThreshold, critThreshold])
                 alerts.forEach { NotificationManager.shared.fire($0) }
             }
         } catch UsageError.unauthorized, CredentialError.notFound {
@@ -131,6 +141,19 @@ final class UsageStore: ObservableObject {
         case .error: return lastSnapshot?.heroSeverity ?? .unknown
         case .loading, .signedOut: return .unknown
         }
+    }
+
+    /// Compact reset countdown shown next to the percent when enabled.
+    var menuBarCountdown: String {
+        guard showCountdown else { return "" }
+        let snap: UsageSnapshot?
+        switch phase {
+        case .ok(let s): snap = s
+        case .error: snap = lastSnapshot
+        default: snap = nil
+        }
+        guard let snap, snap.heroPercent != nil else { return "" }
+        return Formatting.compactCountdown(to: snap.heroResetsAt)
     }
 
     private static func describe(_ error: Error) -> String {

@@ -22,6 +22,23 @@ public enum Formatting {
         String(format: "%.0f%%", p)
     }
 
+    /// Compact countdown for the tight menu bar, e.g. "2h58m", "55m", "3d2h".
+    public static func compactCountdown(to date: Date?, now: Date = Date()) -> String {
+        guard let date else { return "" }
+        let secs = Int(date.timeIntervalSince(now))
+        if secs <= 0 { return "0m" }
+        let mins = secs / 60
+        if mins < 60 { return "\(mins)m" }
+        let hours = mins / 60
+        if hours < 24 {
+            let m = mins % 60
+            return m == 0 ? "\(hours)h" : "\(hours)h\(m)m"
+        }
+        let days = hours / 24
+        let h = hours % 24
+        return h == 0 ? "\(days)d" : "\(days)d\(h)h"
+    }
+
     /// Humanized reset countdown, e.g. "resets in 2h 40m", "resets in 3d",
     /// "resets soon". Returns "" if the date is missing.
     public static func reset(to date: Date?, now: Date = Date()) -> String {

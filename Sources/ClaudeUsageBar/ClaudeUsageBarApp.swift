@@ -35,7 +35,9 @@ struct MenuBarLabelView: View {
             if let icon = ClaudeMark.icon(for: store.menuBarSeverity) {
                 Image(nsImage: icon).renderingMode(.original)
             }
-            Text(store.menuBarPercent)
+            Text(store.menuBarCountdown.isEmpty
+                 ? store.menuBarPercent
+                 : "\(store.menuBarPercent) · \(store.menuBarCountdown)")
         }
     }
 }

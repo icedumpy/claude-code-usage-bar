@@ -17,6 +17,7 @@ public struct UsageSnapshot: Sendable, Equatable {
     public let heroPercent: Double?
     public let heroSeverity: Severity
     public let heroLabel: String?
+    public let heroResetsAt: Date?
     public let limitRows: [LimitRow]
     public let models: [ModelUsage]
     public let totalTokens: Int
@@ -63,6 +64,7 @@ public struct UsageSnapshot: Sendable, Equatable {
             heroPercent: hero?.percent,
             heroSeverity: hero?.severity ?? .normal,
             heroLabel: hero?.displayLabel,
+            heroResetsAt: hero?.resetsAt,
             limitRows: rows,
             models: breakdown,
             totalTokens: totalTokens,

@@ -21,7 +21,8 @@ public struct AlertState: Sendable, Equatable {
 public enum ThresholdAlerter {
     public static let thresholds = [80, 95]
 
-    public static func evaluate(limits: [Limit], state: inout AlertState) -> [ThresholdAlert] {
+    public static func evaluate(limits: [Limit], state: inout AlertState,
+                                thresholds: [Int] = ThresholdAlerter.thresholds) -> [ThresholdAlert] {
         var alerts: [ThresholdAlert] = []
         for limit in limits {
             let id = "\(limit.kind)#\(limit.modelName ?? "")"
