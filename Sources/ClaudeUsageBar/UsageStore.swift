@@ -9,6 +9,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var lastSnapshot: UsageSnapshot?
     @Published private(set) var lastUpdated: Date?
     @Published private(set) var isRefreshing = false
+    @Published private(set) var updateInfo: UpdateInfo?
     @Published var refreshInterval: TimeInterval {
         didSet { schedule() }
     }
@@ -57,6 +58,7 @@ final class UsageStore: ObservableObject {
     func start() {
         refreshNow()
         schedule()
+        Task { updateInfo = await UpdateChecker.check() }
     }
 
     func refreshNow() {

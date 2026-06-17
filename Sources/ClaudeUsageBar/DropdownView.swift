@@ -8,12 +8,27 @@ struct DropdownView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             Divider()
+            if let update = store.updateInfo {
+                updateBanner(update)
+                Divider()
+            }
             content
             Divider()
             footer
         }
         .padding(12)
         .frame(width: 320)
+    }
+
+    private func updateBanner(_ update: UpdateInfo) -> some View {
+        Button {
+            if let url = URL(string: update.url) { NSWorkspace.shared.open(url) }
+        } label: {
+            Label("Update available — v\(update.version)", systemImage: "arrow.down.circle.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.blue)
+        }
+        .buttonStyle(.plain)
     }
 
     private var header: some View {
