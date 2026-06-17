@@ -13,7 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build universal app
-        run: ./scripts/build_app.sh
+        run: |
+          export VERSION="${GITHUB_REF_NAME#v}"   # v1.1.0 -> 1.1.0
+          ./scripts/build_app.sh
       - name: Zip app bundle
         run: ditto -c -k --sequesterRsrc --keepParent dist/ClaudeUsageBar.app ClaudeUsageBar.zip
       - name: Create GitHub Release

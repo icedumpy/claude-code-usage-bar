@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 APP_NAME="ClaudeUsageBar"
 BUNDLE_ID="com.pongporamat.claudeusagebar"
-VERSION="1.0.0"
+VERSION="${VERSION:-1.0.0}"   # release workflow overrides this from the git tag
 APP="$ROOT/dist/${APP_NAME}.app"
 
 echo "==> building arm64"
