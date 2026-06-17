@@ -124,29 +124,38 @@ private struct LimitRowView: View {
                 Text(Formatting.percent(row.percent))
                     .font(.callout.monospacedDigit().weight(.semibold))
             }
-            // Usage racing the clock: colored usage bar over a red time bar.
-            CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
+            // Usage racing the clock: labeled usage bar over a red time bar.
+            HStack(spacing: 6) {
+                Text("used").frame(width: 26, alignment: .leading)
+                CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
+            }
+            .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
             if let elapsed = row.elapsedFraction {
-                CapsuleBar(value: elapsed * 100, color: .red.opacity(0.65), height: 3)
+                HStack(spacing: 6) {
+                    Text("time").frame(width: 26, alignment: .leading)
+                    CapsuleBar(value: elapsed * 100, color: .red.opacity(0.65), height: 3)
+                }
+                .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
             }
             HStack(spacing: 4) {
-                Text(Formatting.reset(to: row.resetsAt))
-                if !paceNote.isEmpty {
+                Text(Formatting.reset(to: row.resetsAt)).foregroundStyle(.tertiary)
+                if !pace.text.isEmpty {
                     Spacer()
-                    Text(paceNote)
+                    Text(pace.text).foregroundStyle(pace.color)
                 }
             }
-            .font(.caption2).foregroundStyle(.tertiary)
+            .font(.caption2)
         }
     }
 
-    /// Compares usage to elapsed time — is usage outrunning the clock?
-    private var paceNote: String {
-        guard let elapsed = row.elapsedFraction else { return "" }
+    /// Is usage outrunning the clock? Colored so the verdict is unmistakable:
+    /// orange = burning faster than time, green = comfortably behind.
+    private var pace: (text: String, color: Color) {
+        guard let elapsed = row.elapsedFraction else { return ("", .secondary) }
         let usage = row.percent / 100
-        if usage > elapsed + 0.08 { return "ahead of pace" }
-        if usage < elapsed - 0.08 { return "behind pace" }
-        return "on pace"
+        if usage > elapsed + 0.08 { return ("ahead of pace", .orange) }
+        if usage < elapsed - 0.08 { return ("behind pace", .green) }
+        return ("on pace", .secondary)
     }
 }
 
