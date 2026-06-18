@@ -17,6 +17,12 @@ struct SettingsView: View {
                 Toggle("Show reset countdown", isOn: $store.showCountdown)
             }
 
+            Section("Dropdown") {
+                Picker("Usage display", selection: $store.vizStyle) {
+                    ForEach(VisualizationStyle.allCases) { Text($0.label).tag($0) }
+                }
+            }
+
             Section("Alerts") {
                 Toggle("Notify on high usage", isOn: $store.alertsEnabled)
                 Stepper("Warn at \(store.warnThreshold)%",
@@ -37,6 +43,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 340)
+        .frame(width: 360, height: 400)
     }
 }

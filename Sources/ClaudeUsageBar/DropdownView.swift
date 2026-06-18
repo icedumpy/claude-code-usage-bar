@@ -75,7 +75,7 @@ struct DropdownView: View {
     private func snapshotView(_ snap: UsageSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 11) {
-                ForEach(snap.limitRows) { LimitRowView(row: $0) }
+                ForEach(snap.limitRows) { LimitRowView(row: $0, style: store.vizStyle) }
             }
             if !snap.models.isEmpty {
                 Divider()
@@ -122,6 +122,7 @@ struct DropdownView: View {
 
 private struct LimitRowView: View {
     let row: LimitRow
+    let style: VisualizationStyle
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -139,18 +140,12 @@ private struct LimitRowView: View {
                 Text(Formatting.percent(row.percent))
                     .font(.callout.monospacedDigit().weight(.semibold))
             }
-            // Usage racing the clock: labeled usage bar over a red time bar.
-            HStack(spacing: 6) {
-                Text("used").frame(width: 26, alignment: .leading)
-                CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
-            }
-            .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
-            if let elapsed = row.elapsedFraction {
-                HStack(spacing: 6) {
-                    Text("time").frame(width: 26, alignment: .leading)
-                    CapsuleBar(value: elapsed * 100, color: .red.opacity(0.65), height: 3)
-                }
-                .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
+            switch style {
+            case .bars: bars
+            case .race:
+                RaceTrackView(percent: row.percent,
+                              elapsedFraction: row.elapsedFraction,
+                              severity: row.severity)
             }
             HStack(spacing: 4) {
                 Text(Formatting.reset(to: row.resetsAt)).foregroundStyle(.tertiary)
@@ -163,6 +158,22 @@ private struct LimitRowView: View {
         }
     }
 
+    // Usage racing the clock: labeled usage bar over a red time bar.
+    @ViewBuilder private var bars: some View {
+        HStack(spacing: 6) {
+            Text("used").frame(width: 26, alignment: .leading)
+            CapsuleBar(value: row.percent, color: SeverityStyle.color(row.severity), height: 6)
+        }
+        .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
+        if let elapsed = row.elapsedFraction {
+            HStack(spacing: 6) {
+                Text("time").frame(width: 26, alignment: .leading)
+                CapsuleBar(value: elapsed * 100, color: .red.opacity(0.65), height: 3)
+            }
+            .font(.system(size: 9, weight: .medium)).foregroundStyle(.tertiary)
+        }
+    }
+
     /// Is usage outrunning the clock? Colored so the verdict is unmistakable:
     /// orange = burning faster than time, green = comfortably behind.
     private var pace: (text: String, color: Color) {
@@ -172,6 +183,67 @@ private struct LimitRowView: View {
         if usage < elapsed - 0.08 { return ("behind pace", .green) }
         return ("on pace", .secondary)
     }
+}
+
+/// Two SF Symbol racers on a shared lane: a rabbit (= usage) and a turtle
+/// (= time-elapsed). Horizontal position carries the data; a gentle idle wobble
+/// keeps them alive. Stateless — purely a function of the current snapshot, so
+/// there is nothing to retain between refreshes. Rabbit ahead of turtle means
+/// usage is outrunning the clock. Rows without a time window (e.g. weekly) have
+/// no turtle and just show the lone rabbit.
+private struct RaceTrackView: View {
+    let percent: Double            // 0...100, usage
+    let elapsedFraction: Double?   // 0...1, fraction of the window elapsed
+    let severity: Severity
+
+    @State private var wobble = false
+
+    private let glyph: CGFloat = 13
+    private let trackHeight: CGFloat = 26
+
+    var body: some View {
+        GeometryReader { geo in
+            // Inset so the glyph centers never clip at the lane ends.
+            let inset = glyph / 2 + 2
+            let usable = max(1, geo.size.width - inset * 2)
+            let midY = geo.size.height / 2
+            ZStack {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.12))
+                    .frame(height: 2)
+                    .position(x: geo.size.width / 2, y: midY)
+
+                if let elapsed = elapsedFraction {
+                    racer("tortoise.fill", color: .red.opacity(0.65))
+                        .accessibilityLabel(Text("Time elapsed: \(Int((elapsed * 100).rounded()))%"))
+                        .position(x: inset + usable * clamp01(elapsed), y: midY + 5)
+                        // Slide to the new spot when a refresh lands.
+                        .animation(.easeOut(duration: 0.6), value: elapsed)
+                }
+                racer("hare.fill", color: SeverityStyle.color(severity))
+                    .accessibilityLabel(Text("Usage: \(Int(percent.rounded()))%"))
+                    .position(x: inset + usable * clamp01(percent / 100), y: midY - 5)
+                    .animation(.easeOut(duration: 0.6), value: percent)
+            }
+            // Suppress the first-layout flash when GeometryReader reports zero width.
+            .opacity(geo.size.width > 1 ? 1 : 0)
+        }
+        .frame(height: trackHeight)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
+                wobble = true
+            }
+        }
+    }
+
+    private func racer(_ symbol: String, color: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: glyph))
+            .foregroundStyle(color)
+            .rotationEffect(.degrees(wobble ? 4 : -4), anchor: .bottom)
+    }
+
+    private func clamp01(_ v: Double) -> Double { min(1, max(0, v)) }
 }
 
 /// A rounded bar (nicer than the default ProgressView at this size).

@@ -26,6 +26,10 @@ final class UsageStore: ObservableObject {
     @Published var critThreshold: Int = (UserDefaults.standard.object(forKey: "critThreshold") as? Int) ?? 95 {
         didSet { UserDefaults.standard.set(critThreshold, forKey: "critThreshold") }
     }
+    @Published var vizStyle: VisualizationStyle =
+        VisualizationStyle(rawValue: UserDefaults.standard.string(forKey: "vizStyle") ?? "") ?? .bars {
+        didSet { UserDefaults.standard.set(vizStyle.rawValue, forKey: "vizStyle") }
+    }
 
     private let client: UsageFetching
     private let credentials: CredentialReading
@@ -164,6 +168,22 @@ final class UsageStore: ObservableObject {
         case UsageError.network: return "Network unavailable"
         case UsageError.decoding: return "Unexpected response"
         default: return "Temporary error"
+        }
+    }
+}
+
+/// How the dropdown draws each limit row: the classic stacked capsule bars,
+/// or the rabbit-vs-turtle race track. User-selectable in Settings.
+enum VisualizationStyle: String, CaseIterable, Identifiable {
+    case bars
+    case race
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .bars: return "Bars"
+        case .race: return "Rabbit & turtle"
         }
     }
 }
