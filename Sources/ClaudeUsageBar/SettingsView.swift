@@ -1,4 +1,5 @@
 import SwiftUI
+import UsageCore
 
 /// Preferences form, shown in a standalone window from the dropdown's Settings…
 struct SettingsView: View {
@@ -15,6 +16,12 @@ struct SettingsView: View {
                     Text("5 minutes").tag(TimeInterval(300))
                 }
                 Toggle("Show reset countdown", isOn: $store.showCountdown)
+                Picker("Show", selection: $store.menuBarDisplay) {
+                    ForEach(MenuBarDisplay.allCases) { Text($0.label).tag($0) }
+                }
+                Picker("Driven by", selection: $store.heroChoice) {
+                    ForEach(HeroLimitChoice.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
             }
 
             Section("Dropdown") {
@@ -55,6 +62,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 520)
+        .frame(width: 360, height: 590)
     }
 }

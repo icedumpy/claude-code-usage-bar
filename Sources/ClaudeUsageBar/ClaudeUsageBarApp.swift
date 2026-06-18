@@ -38,8 +38,8 @@ struct MenuBarLabelView: View {
                 Image(nsImage: icon).renderingMode(.original)
             }
             Text(store.menuBarCountdown.isEmpty
-                 ? store.menuBarPercent
-                 : "\(store.menuBarPercent) · \(store.menuBarCountdown)")
+                 ? store.menuBarText
+                 : "\(store.menuBarText) · \(store.menuBarCountdown)")
         }
     }
 }

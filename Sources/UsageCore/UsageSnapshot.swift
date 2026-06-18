@@ -3,6 +3,8 @@ import Foundation
 /// One rate-limit row for the dropdown.
 public struct LimitRow: Identifiable, Sendable, Equatable {
     public let id: String
+    /// Raw limit kind: "session", "weekly_all", "weekly_scoped", etc.
+    public let kind: String
     public let label: String
     public let percent: Double
     public let severity: Severity
@@ -57,6 +59,7 @@ public struct UsageSnapshot: Sendable, Equatable {
                     // resetsAt keeps the id unique even if the API returns two
                     // limits with the same kind+model (else ForEach misbehaves).
                     id: "\(l.kind)#\(l.modelName ?? "")#\(l.resetsAt?.timeIntervalSince1970 ?? 0)",
+                    kind: l.kind,
                     label: l.displayLabel,
                     percent: l.percent,
                     severity: l.severity,
@@ -84,6 +87,55 @@ public struct UsageSnapshot: Sendable, Equatable {
 
     private static func isSameLimit(_ a: Limit, _ b: Limit) -> Bool {
         a.kind == b.kind && a.modelName == b.modelName && a.percent == b.percent
+    }
+}
+
+/// Which rate-limit window drives the menu bar's number, color, and countdown.
+public enum HeroLimitChoice: String, CaseIterable, Sendable, Identifiable {
+    case auto, session, weeklyAll, weeklyScoped
+
+    public var id: String { rawValue }
+
+    public var label: String {
+        switch self {
+        case .auto: return "Auto (most severe)"
+        case .session: return "5-hour window"
+        case .weeklyAll: return "Weekly (all)"
+        case .weeklyScoped: return "Weekly (per-model)"
+        }
+    }
+}
+
+public extension UsageSnapshot {
+    /// The limit row that should drive the menu bar for the given choice.
+    /// `.auto` picks whichever limit is most severe, then highest percent.
+    /// Returns nil if no matching limit exists (caller falls back to hero*).
+    func menuBarRow(for choice: HeroLimitChoice) -> LimitRow? {
+        // Narrow to a pool of rows, then pick the most severe (then
+        // highest-percent). So a kind with several rows — e.g. multiple
+        // weekly_scoped model tiers — surfaces its worst one, not an arbitrary
+        // first match.
+        let pool: [LimitRow]
+        switch choice {
+        case .auto:         pool = limitRows
+        case .session:      pool = limitRows.filter { $0.kind == "session" }
+        case .weeklyAll:    pool = limitRows.filter { $0.kind == "weekly_all" }
+        case .weeklyScoped: pool = limitRows.filter { $0.kind == "weekly_scoped" }
+        }
+        return pool.max {
+            (Self.severityRank($0.severity), $0.percent)
+                < (Self.severityRank($1.severity), $1.percent)
+        }
+    }
+
+    private static func severityRank(_ s: Severity) -> Int {
+        switch s {
+        case .unknown: return -1   // unknown always loses to any real severity
+        case .normal: return 0
+        case .warning: return 1
+        case .severe: return 2
+        case .critical: return 3
+        }
     }
 }
 

@@ -51,6 +51,16 @@ final class UsageStore: ObservableObject {
         didSet { UserDefaults.standard.set(pinShowModels, forKey: "pinShowModels") }
     }
 
+    // Menu bar display preferences.
+    @Published var menuBarDisplay: MenuBarDisplay =
+        MenuBarDisplay(rawValue: UserDefaults.standard.string(forKey: "menuBarDisplay") ?? "") ?? .percent {
+        didSet { UserDefaults.standard.set(menuBarDisplay.rawValue, forKey: "menuBarDisplay") }
+    }
+    @Published var heroChoice: HeroLimitChoice =
+        HeroLimitChoice(rawValue: UserDefaults.standard.string(forKey: "heroChoice") ?? "") ?? .session {
+        didSet { UserDefaults.standard.set(heroChoice.rawValue, forKey: "heroChoice") }
+    }
+
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine = CostEngine()
@@ -145,41 +155,54 @@ final class UsageStore: ObservableObject {
         }
     }
 
-    /// Percent text for the menu bar (no emoji — the tinted Claude mark carries
-    /// the color). "…" while loading, "!" when signed out.
-    var menuBarPercent: String {
+    /// Snapshot worth displaying right now (last-known stays visible on error).
+    private var displaySnapshot: UsageSnapshot? {
         switch phase {
-        case .loading:
-            return "…"
-        case .ok(let snap):
-            return snap.heroPercent.map { Formatting.percent($0) } ?? "—"
-        case .signedOut:
-            return "!"
-        case .error:
-            return lastSnapshot?.heroPercent.map { Formatting.percent($0) } ?? "!"
+        case .ok(let s): return s
+        case .error: return lastSnapshot
+        case .loading, .signedOut: return nil
+        }
+    }
+
+    /// The menu-bar limit chosen by `heroChoice` (falls back to the snapshot's
+    /// session-based hero if that limit isn't present).
+    private var heroRow: LimitRow? { displaySnapshot?.menuBarRow(for: heroChoice) }
+
+    /// Menu bar text (no emoji — the tinted Claude mark carries the color):
+    /// percent, dollars, or both, per `menuBarDisplay`. "…" loading, "!" signed out.
+    var menuBarText: String {
+        switch phase {
+        case .loading: return "…"
+        case .signedOut: return "!"
+        case .ok, .error: break
+        }
+        guard let snap = displaySnapshot else { return "!" }
+        let pct = heroRow?.percent ?? snap.heroPercent
+        let pctStr = pct.map { Formatting.percent($0) } ?? "—"
+        // totalCostUSD comes from local CostEngine history, so it stays current
+        // even when `snap` is a lastSnapshot held over an error.
+        let dollarStr = Formatting.dollars(snap.totalCostUSD)
+        switch menuBarDisplay {
+        case .percent: return pctStr
+        case .dollars: return dollarStr
+        case .both: return "\(pctStr) · \(dollarStr)"
         }
     }
 
     /// Severity driving the Claude mark's tint.
     var menuBarSeverity: Severity {
-        switch phase {
-        case .ok(let snap): return snap.heroSeverity
-        case .error: return lastSnapshot?.heroSeverity ?? .unknown
-        case .loading, .signedOut: return .unknown
-        }
+        guard let snap = displaySnapshot else { return .unknown }
+        return heroRow?.severity ?? snap.heroSeverity
     }
 
-    /// Compact reset countdown shown next to the percent when enabled.
+    /// Compact reset countdown shown next to the text when enabled.
     var menuBarCountdown: String {
-        guard showCountdown else { return "" }
-        let snap: UsageSnapshot?
-        switch phase {
-        case .ok(let s): snap = s
-        case .error: snap = lastSnapshot
-        default: snap = nil
-        }
-        guard let snap, snap.heroPercent != nil else { return "" }
-        return Formatting.compactCountdown(to: snap.heroResetsAt)
+        guard showCountdown, let snap = displaySnapshot else { return "" }
+        let pct = heroRow?.percent ?? snap.heroPercent
+        guard pct != nil else { return "" }
+        // Falls back to the session window's reset (snap.heroResetsAt) if the
+        // chosen limit is absent.
+        return Formatting.compactCountdown(to: heroRow?.resetsAt ?? snap.heroResetsAt)
     }
 
     private static func describe(_ error: Error) -> String {
@@ -204,6 +227,24 @@ enum VisualizationStyle: String, CaseIterable, Identifiable {
         switch self {
         case .bars: return "Bars"
         case .race: return "Rabbit & turtle"
+        }
+    }
+}
+
+/// What the menu bar shows: the limit percentage, the week's dollar value, or
+/// both. Dollars are the notional API-equivalent value, not real spend.
+enum MenuBarDisplay: String, CaseIterable, Identifiable {
+    case percent
+    case dollars
+    case both
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .percent: return "Percent"
+        case .dollars: return "Dollars"
+        case .both: return "Both"
         }
     }
 }
