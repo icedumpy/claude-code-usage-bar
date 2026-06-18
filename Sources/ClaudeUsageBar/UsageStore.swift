@@ -31,6 +31,26 @@ final class UsageStore: ObservableObject {
         didSet { UserDefaults.standard.set(vizStyle.rawValue, forKey: "vizStyle") }
     }
 
+    // Pinned PiP panel preferences (see PinnedPanelController/View).
+    @Published var isPinned: Bool = UserDefaults.standard.bool(forKey: "isPinned") {
+        didSet { UserDefaults.standard.set(isPinned, forKey: "isPinned") }
+    }
+    @Published var pinOpacity: Double = PinnedPanelGeometry.clampOpacity(
+        (UserDefaults.standard.object(forKey: "pinOpacity") as? Double) ?? 0.95) {
+        didSet { UserDefaults.standard.set(pinOpacity, forKey: "pinOpacity") }
+    }
+    @Published var pinScale: Double = PinnedPanelGeometry.clampScale(
+        (UserDefaults.standard.object(forKey: "pinScale") as? Double) ?? 1.0) {
+        didSet { UserDefaults.standard.set(pinScale, forKey: "pinScale") }
+    }
+    @Published var pinShowWeekly: Bool =
+        (UserDefaults.standard.object(forKey: "pinShowWeekly") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(pinShowWeekly, forKey: "pinShowWeekly") }
+    }
+    @Published var pinShowModels: Bool = UserDefaults.standard.bool(forKey: "pinShowModels") {
+        didSet { UserDefaults.standard.set(pinShowModels, forKey: "pinShowModels") }
+    }
+
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine = CostEngine()

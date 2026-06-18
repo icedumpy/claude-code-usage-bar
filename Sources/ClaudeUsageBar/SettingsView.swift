@@ -23,6 +23,18 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Pinned panel") {
+                HStack {
+                    Text("Opacity")
+                    Slider(value: $store.pinOpacity, in: 0.1...1.0)
+                    Text("\(Int(store.pinOpacity * 100))%")
+                        .font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+                        .frame(width: 40, alignment: .trailing)
+                }
+                Toggle("Show weekly limits", isOn: $store.pinShowWeekly)
+                Toggle("Show per-model breakdown", isOn: $store.pinShowModels)
+            }
+
             Section("Alerts") {
                 Toggle("Notify on high usage", isOn: $store.alertsEnabled)
                 Stepper("Warn at \(store.warnThreshold)%",
@@ -43,6 +55,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 400)
+        .frame(width: 360, height: 520)
     }
 }

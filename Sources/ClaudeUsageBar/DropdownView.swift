@@ -111,6 +111,11 @@ struct DropdownView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
+            Button(store.isPinned ? "Unpin" : "Pin") {
+                store.isPinned.toggle()
+                if store.isPinned { PinnedPanelController.shared.show(store: store) }
+                else { PinnedPanelController.shared.hide() }
+            }
             Button("Settings…") { SettingsWindowController.shared.show(store: store) }
             Button(store.isRefreshing ? "Refreshing…" : "Refresh") { store.refreshNow() }
                 .disabled(store.isRefreshing)
@@ -120,7 +125,7 @@ struct DropdownView: View {
     }
 }
 
-private struct LimitRowView: View {
+struct LimitRowView: View {
     let row: LimitRow
     let style: VisualizationStyle
 

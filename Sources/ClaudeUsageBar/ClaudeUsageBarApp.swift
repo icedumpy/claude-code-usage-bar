@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ClaudeMark.ensurePlaceholders()
         NotificationManager.shared.requestAuthorization()
         store.start()
+        // Re-attach the pinned panel if it was left open last session.
+        if store.isPinned { PinnedPanelController.shared.show(store: store) }
     }
 }
 
