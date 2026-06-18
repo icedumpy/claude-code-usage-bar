@@ -105,23 +105,27 @@ struct DropdownView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 8) {
+        // The timestamp gets its own line so it never gets squeezed/truncated
+        // by the button row below it.
+        VStack(alignment: .leading, spacing: 6) {
             if let u = store.lastUpdated {
                 Text("updated \(u.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2).foregroundStyle(.secondary)
             }
-            Spacer()
-            Button(store.isPinned ? "Unpin" : "Pin") {
-                store.isPinned.toggle()
-                if store.isPinned { PinnedPanelController.shared.show(store: store) }
-                else { PinnedPanelController.shared.hide() }
+            HStack(spacing: 8) {
+                Button(store.isPinned ? "Unpin" : "Pin") {
+                    store.isPinned.toggle()
+                    if store.isPinned { PinnedPanelController.shared.show(store: store) }
+                    else { PinnedPanelController.shared.hide() }
+                }
+                Button("Settings…") { SettingsWindowController.shared.show(store: store) }
+                Spacer()
+                Button(store.isRefreshing ? "Refreshing…" : "Refresh") { store.refreshNow() }
+                    .disabled(store.isRefreshing)
+                Button("Quit") { NSApplication.shared.terminate(nil) }
             }
-            Button("Settings…") { SettingsWindowController.shared.show(store: store) }
-            Button(store.isRefreshing ? "Refreshing…" : "Refresh") { store.refreshNow() }
-                .disabled(store.isRefreshing)
-            Button("Quit") { NSApplication.shared.terminate(nil) }
+            .controlSize(.small)
         }
-        .controlSize(.small)
     }
 }
 
