@@ -18,10 +18,20 @@ token/cost breakdown in the dropdown, and a notification before you hit a wall.
 - **Dropdown:** each rate-limit window (5-hour, weekly-all, weekly-per-model)
   with a usage bar and reset time, then a per-model token total and an
   API-equivalent dollar figure for the current week.
+- **Visualization toggle:** show each limit as plain **bars**, or as a
+  **rabbit-and-turtle race** — a rabbit (your usage) and a turtle (time elapsed
+  in the window) on a shared track, so a glance tells you whether you're burning
+  faster than the clock. Pick it in Settings; defaults to bars.
+- **Pinned panel:** detach a chromeless, always-on-top "picture-in-picture"
+  widget (the **Pin** button in the dropdown footer). It floats over every Space
+  and fullscreen app without stealing focus, drags anywhere, resizes by its
+  corner, and its opacity and which sections it shows are adjustable. Position
+  and state persist across launches.
 - **Alerts:** a macOS notification when a limit crosses a threshold
   (80% / 95% by default, adjustable).
-- **Settings:** refresh interval, countdown toggle, alert thresholds, and
-  launch-at-login.
+- **Settings:** refresh interval, countdown toggle, alert thresholds,
+  launch-at-login, the bars/race visualization, and the pinned panel's opacity
+  and visible sections.
 - **Quiet under load:** backs off automatically on rate-limit responses, and
   keeps showing last-known numbers instead of an error.
 
@@ -114,10 +124,13 @@ before rendering).
 
 - `Sources/UsageCore/` — UI-free, unit-tested data layer: `UsageClient` (API),
   `CostEngine` (actor; JSONL parsing + caching), `Credentials` (token parsing),
-  `PriceTable`, `ThresholdAlerter`, `UsageSnapshot`, `Formatting`.
+  `PriceTable`, `ThresholdAlerter`, `UsageSnapshot`, `Formatting`, and
+  `PinnedPanelGeometry` (pure clamp + on/off-screen logic for the pinned panel).
 - `Sources/ClaudeUsageBar/` — SwiftUI app: `UsageStore` (`@MainActor`
-  `ObservableObject` polling + backoff), `DropdownView`, `SettingsView`,
-  `NotificationManager`, `ShellCredentialProvider`, and `Probe` (`--probe` CLI).
+  `ObservableObject` polling + backoff), `DropdownView` (with the bars/race
+  visualization), `SettingsView`, `PinnedPanelController` / `PinnedPanelView`
+  (the floating PiP panel), `NotificationManager`, `ShellCredentialProvider`,
+  and `Probe` (`--probe` CLI).
 
 ## Other commands
 
