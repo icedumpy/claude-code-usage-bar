@@ -14,51 +14,45 @@ final class UsageStore: ObservableObject {
         didSet { schedule() }
     }
 
-    @Published var alertsEnabled: Bool = (UserDefaults.standard.object(forKey: "alertsEnabled") as? Bool) ?? true {
-        didSet { UserDefaults.standard.set(alertsEnabled, forKey: "alertsEnabled") }
+    @Published var alertsEnabled = Defaults.value("alertsEnabled", true) {
+        didSet { Defaults.set("alertsEnabled", alertsEnabled) }
     }
-    @Published var showCountdown: Bool = UserDefaults.standard.bool(forKey: "showCountdown") {
-        didSet { UserDefaults.standard.set(showCountdown, forKey: "showCountdown") }
+    @Published var showCountdown = Defaults.value("showCountdown", false) {
+        didSet { Defaults.set("showCountdown", showCountdown) }
     }
-    @Published var warnThreshold: Int = (UserDefaults.standard.object(forKey: "warnThreshold") as? Int) ?? 80 {
-        didSet { UserDefaults.standard.set(warnThreshold, forKey: "warnThreshold") }
+    @Published var warnThreshold = Defaults.value("warnThreshold", 80) {
+        didSet { Defaults.set("warnThreshold", warnThreshold) }
     }
-    @Published var critThreshold: Int = (UserDefaults.standard.object(forKey: "critThreshold") as? Int) ?? 95 {
-        didSet { UserDefaults.standard.set(critThreshold, forKey: "critThreshold") }
+    @Published var critThreshold = Defaults.value("critThreshold", 95) {
+        didSet { Defaults.set("critThreshold", critThreshold) }
     }
-    @Published var vizStyle: VisualizationStyle =
-        VisualizationStyle(rawValue: UserDefaults.standard.string(forKey: "vizStyle") ?? "") ?? .bars {
-        didSet { UserDefaults.standard.set(vizStyle.rawValue, forKey: "vizStyle") }
+    @Published var vizStyle = Defaults.raw("vizStyle", VisualizationStyle.bars) {
+        didSet { Defaults.setRaw("vizStyle", vizStyle) }
     }
 
     // Pinned PiP panel preferences (see PinnedPanelController/View).
-    @Published var isPinned: Bool = UserDefaults.standard.bool(forKey: "isPinned") {
-        didSet { UserDefaults.standard.set(isPinned, forKey: "isPinned") }
+    @Published var isPinned = Defaults.value("isPinned", false) {
+        didSet { Defaults.set("isPinned", isPinned) }
     }
-    @Published var pinOpacity: Double = PinnedPanelGeometry.clampOpacity(
-        (UserDefaults.standard.object(forKey: "pinOpacity") as? Double) ?? 0.95) {
-        didSet { UserDefaults.standard.set(pinOpacity, forKey: "pinOpacity") }
+    @Published var pinOpacity = PinnedPanelGeometry.clampOpacity(Defaults.value("pinOpacity", 0.95)) {
+        didSet { Defaults.set("pinOpacity", pinOpacity) }
     }
-    @Published var pinScale: Double = PinnedPanelGeometry.clampScale(
-        (UserDefaults.standard.object(forKey: "pinScale") as? Double) ?? 1.0) {
-        didSet { UserDefaults.standard.set(pinScale, forKey: "pinScale") }
+    @Published var pinScale = PinnedPanelGeometry.clampScale(Defaults.value("pinScale", 1.0)) {
+        didSet { Defaults.set("pinScale", pinScale) }
     }
-    @Published var pinShowWeekly: Bool =
-        (UserDefaults.standard.object(forKey: "pinShowWeekly") as? Bool) ?? true {
-        didSet { UserDefaults.standard.set(pinShowWeekly, forKey: "pinShowWeekly") }
+    @Published var pinShowWeekly = Defaults.value("pinShowWeekly", true) {
+        didSet { Defaults.set("pinShowWeekly", pinShowWeekly) }
     }
-    @Published var pinShowModels: Bool = UserDefaults.standard.bool(forKey: "pinShowModels") {
-        didSet { UserDefaults.standard.set(pinShowModels, forKey: "pinShowModels") }
+    @Published var pinShowModels = Defaults.value("pinShowModels", false) {
+        didSet { Defaults.set("pinShowModels", pinShowModels) }
     }
 
     // Menu bar display preferences.
-    @Published var menuBarDisplay: MenuBarDisplay =
-        MenuBarDisplay(rawValue: UserDefaults.standard.string(forKey: "menuBarDisplay") ?? "") ?? .percent {
-        didSet { UserDefaults.standard.set(menuBarDisplay.rawValue, forKey: "menuBarDisplay") }
+    @Published var menuBarDisplay = Defaults.raw("menuBarDisplay", MenuBarDisplay.percent) {
+        didSet { Defaults.setRaw("menuBarDisplay", menuBarDisplay) }
     }
-    @Published var heroChoice: HeroLimitChoice =
-        HeroLimitChoice(rawValue: UserDefaults.standard.string(forKey: "heroChoice") ?? "") ?? .session {
-        didSet { UserDefaults.standard.set(heroChoice.rawValue, forKey: "heroChoice") }
+    @Published var heroChoice = Defaults.raw("heroChoice", HeroLimitChoice.session) {
+        didSet { Defaults.setRaw("heroChoice", heroChoice) }
     }
 
     private let client: UsageFetching

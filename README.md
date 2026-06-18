@@ -13,8 +13,10 @@ token/cost breakdown in the dropdown, and a notification before you hit a wall.
 ## Features
 
 - **Menu bar:** a colored dot (green / amber / red by severity) plus your
-  **5-hour window** percentage. Optionally show the reset countdown too
-  (`47% · 2h45m`).
+  usage. Choose what it shows — the limit **percentage**, the week's **dollar**
+  value, or both (`47% · $1,612`) — and **which limit drives it** (the 5-hour
+  window, a weekly limit, or "Auto" = whichever is most severe). Optional reset
+  countdown.
 - **Dropdown:** each rate-limit window (5-hour, weekly-all, weekly-per-model)
   with a usage bar and reset time, then a per-model token total and an
   API-equivalent dollar figure for the current week.
@@ -29,9 +31,9 @@ token/cost breakdown in the dropdown, and a notification before you hit a wall.
   and state persist across launches.
 - **Alerts:** a macOS notification when a limit crosses a threshold
   (80% / 95% by default, adjustable).
-- **Settings:** refresh interval, countdown toggle, alert thresholds,
-  launch-at-login, the bars/race visualization, and the pinned panel's opacity
-  and visible sections.
+- **Settings:** refresh interval, countdown toggle, what the menu bar shows and
+  which limit drives it, alert thresholds, launch-at-login, the bars/race
+  visualization, and the pinned panel's opacity and visible sections.
 - **Quiet under load:** backs off automatically on rate-limit responses, and
   keeps showing last-known numbers instead of an error.
 
