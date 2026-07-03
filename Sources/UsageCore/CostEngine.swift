@@ -87,10 +87,36 @@ public actor CostEngine {
         return all
     }
 
+    /// Reads a transcript file line-by-line in bounded chunks instead of loading
+    /// the whole thing into memory — a cold scan over a multi-hundred-MB history
+    /// would otherwise spike memory (full contents plus a copy of every line).
+    /// Splitting on the `\n` byte is UTF-8-safe: 0x0A never appears inside a
+    /// multi-byte sequence, so no line is ever cut mid-character.
     private static func parseFile(_ url: URL) -> [Entry] {
-        guard let content = try? String(contentsOf: url, encoding: .utf8) else { return [] }
-        let lines = content.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
-        return parseEntries(lines: lines)
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
+        defer { try? handle.close() }
+
+        var out: [Entry] = []
+        var seen = Set<String>()
+        var buffer = Data()
+
+        func consume<S: Sequence>(_ lineBytes: S) where S.Element == UInt8 {
+            guard let line = String(bytes: lineBytes, encoding: .utf8),
+                  !line.isEmpty,
+                  let entry = parseLine(line, seen: &seen)
+            else { return }
+            out.append(entry)
+        }
+
+        while case let chunk = handle.readData(ofLength: 1 << 20), !chunk.isEmpty {
+            buffer.append(chunk)
+            // Split out complete lines; keep the trailing partial line in buffer.
+            var pieces = buffer.split(separator: 0x0A, omittingEmptySubsequences: false)
+            buffer = Data(pieces.removeLast())
+            for piece in pieces { consume(piece) }
+        }
+        consume(buffer)   // final line with no trailing newline
+        return out
     }
 
     // MARK: - Pure helpers (unit tested)
@@ -100,44 +126,50 @@ public actor CostEngine {
     public static func parseEntries(lines: [String]) -> [Entry] {
         var out: [Entry] = []
         var seen = Set<String>()
-
         for line in lines {
-            // Cheap pre-filter: the token usage object only appears on assistant
-            // lines, so skip the (often very large) tool/user lines before the
-            // full JSON parse. This is the difference between a fast and a slow
-            // cold scan over a big transcript history.
-            guard line.contains("\"usage\"") else { continue }
-
-            guard let data = line.data(using: .utf8),
-                  let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-            else { continue }
-
-            let uuid = obj["uuid"] as? String
-            if let uuid {
-                if seen.contains(uuid) { continue }
-                seen.insert(uuid)
-            }
-
-            guard let tsString = obj["timestamp"] as? String,
-                  let date = ISO8601DateParser.parse(tsString)
-            else { continue }
-
-            guard let message = obj["message"] as? [String: Any],
-                  let model = message["model"] as? String,
-                  model != "<synthetic>",
-                  let usage = message["usage"] as? [String: Any]
-            else { continue }
-
-            let counts = TokenCounts(
-                input: intValue(usage["input_tokens"]),
-                output: intValue(usage["output_tokens"]),
-                cacheWrite: intValue(usage["cache_creation_input_tokens"]),
-                cacheRead: intValue(usage["cache_read_input_tokens"]))
-
-            if counts.total == 0 { continue }
-            out.append(Entry(date: date, model: model, tokens: counts, uuid: uuid))
+            if let entry = parseLine(line, seen: &seen) { out.append(entry) }
         }
         return out
+    }
+
+    /// Parse one transcript line into an `Entry`, or nil if it's not a
+    /// usage-bearing assistant line (or a `uuid` already in `seen`). Shared by
+    /// the streaming reader and the pure `parseEntries(lines:)`.
+    private static func parseLine(_ line: String, seen: inout Set<String>) -> Entry? {
+        // Cheap pre-filter: the token usage object only appears on assistant
+        // lines, so skip the (often very large) tool/user lines before the
+        // full JSON parse. This is the difference between a fast and a slow
+        // cold scan over a big transcript history.
+        guard line.contains("\"usage\"") else { return nil }
+
+        guard let data = line.data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        else { return nil }
+
+        let uuid = obj["uuid"] as? String
+        if let uuid {
+            if seen.contains(uuid) { return nil }
+            seen.insert(uuid)
+        }
+
+        guard let tsString = obj["timestamp"] as? String,
+              let date = ISO8601DateParser.parse(tsString)
+        else { return nil }
+
+        guard let message = obj["message"] as? [String: Any],
+              let model = message["model"] as? String,
+              model != "<synthetic>",
+              let usage = message["usage"] as? [String: Any]
+        else { return nil }
+
+        let counts = TokenCounts(
+            input: intValue(usage["input_tokens"]),
+            output: intValue(usage["output_tokens"]),
+            cacheWrite: intValue(usage["cache_creation_input_tokens"]),
+            cacheRead: intValue(usage["cache_read_input_tokens"]))
+
+        if counts.total == 0 { return nil }
+        return Entry(date: date, model: model, tokens: counts, uuid: uuid)
     }
 
     /// Tally parsed lines into per-model token counts within `[since, now]`.

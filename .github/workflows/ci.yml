@@ -14,3 +14,7 @@ jobs:
         run: swift --version
       - name: Run tests
         run: swift test
+      - name: Build app bundle
+        # Runs the same script a release tag does, so bundle assembly (icon
+        # copy, Info.plist, lipo, ad-hoc codesign) can't rot between releases.
+        run: ./scripts/build_app.sh
