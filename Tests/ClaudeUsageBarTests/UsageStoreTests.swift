@@ -118,6 +118,15 @@ struct UsageStoreTests {
         #expect(client.fetchCount == before + 1)
     }
 
+    @Test @MainActor func errorWithNoDataShowsDistinctGlyph() async {
+        // First-ever fetch fails: no lastSnapshot to fall back on. The menu bar
+        // shows "?" (fetch failed), which must stay distinct from "!" (signed out).
+        let store = makeStore(client: MockClient(.failure(UsageError.http(500))))
+        await store.refresh(force: true)
+        #expect(store.phase == .error("Server error (500)"))
+        #expect(store.menuBarText == "?")
+    }
+
     @Test @MainActor func refreshIntervalPersistsAcrossStores() async throws {
         defer { UserDefaults.standard.removeObject(forKey: "refreshInterval") }
         let first = makeStore(client: MockClient(.failure(UsageError.network)))

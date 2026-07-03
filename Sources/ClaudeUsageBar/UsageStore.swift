@@ -59,6 +59,7 @@ final class UsageStore: ObservableObject {
     private let credentials: CredentialReading
     private let costEngine: CostEngine
     private var timer: Timer?
+    private var updateCheckTask: Task<Void, Never>?
     private var inFlight = false
     private var alertState = AlertState()
     private var failureStreak = 0
@@ -89,7 +90,17 @@ final class UsageStore: ObservableObject {
     func start() {
         refreshNow()
         schedule()
-        Task { updateInfo = await UpdateChecker.check() }
+        // Re-check daily, not just at launch: a menu bar app can stay running
+        // for weeks, so a one-shot check would miss every release after startup.
+        updateCheckTask?.cancel()
+        updateCheckTask = Task { [weak self] in
+            while !Task.isCancelled {
+                let info = await UpdateChecker.check()
+                guard let self, !Task.isCancelled else { return }
+                self.updateInfo = info
+                try? await Task.sleep(for: .seconds(24 * 60 * 60))
+            }
+        }
     }
 
     func refreshNow() {
@@ -176,14 +187,16 @@ final class UsageStore: ObservableObject {
     }
 
     /// Menu bar text (no emoji — the tinted Claude mark carries the color):
-    /// percent, dollars, or both, per `menuBarDisplay`. "…" loading, "!" signed out.
+    /// percent, dollars, or both, per `menuBarDisplay`. "…" loading, "!" signed
+    /// out, "?" an error with no data to fall back on (distinct from "!" so a
+    /// user's screenshot tells "sign in" apart from "fetch failed").
     var menuBarText: String {
         switch phase {
         case .loading: return "…"
         case .signedOut: return "!"
         case .ok, .error: break
         }
-        guard let snap = displaySnapshot else { return "!" }
+        guard let snap = displaySnapshot else { return "?" }
         let pct = heroRow?.percent ?? snap.heroPercent
         let pctStr = pct.map { Formatting.percent($0) } ?? "—"
         // totalCostUSD is baked into the snapshot, so over an error it shows the
