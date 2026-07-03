@@ -67,13 +67,43 @@ on every poll.)
 ## Requirements
 
 - macOS 13 or later (Apple Silicon or Intel — the build is universal).
-- The Swift toolchain. Xcode Command Line Tools is enough
-  (`xcode-select --install`) — no full Xcode needed.
 - **Claude Code installed and signed in with a Claude subscription.** The app
   reads usage from the OAuth token in your Keychain; pay-as-you-go API-key usage
   is not reported.
 
+No developer tooling needed — grab the prebuilt app below. The Swift toolchain
+is only required if you build from source.
+
 ## Install
+
+One command, no git or Xcode:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/icedumpy/claude-code-usage-bar/main/scripts/install-release.sh | bash
+```
+
+It downloads the latest release, installs to `/Applications`, clears the
+Gatekeeper quarantine flag, and launches the app.
+
+Prefer doing it by hand? Download `ClaudeUsageBar.zip` from
+[Releases](https://github.com/icedumpy/claude-code-usage-bar/releases/latest),
+unzip, drag `ClaudeUsageBar.app` to `/Applications`, then — because the app is
+ad-hoc signed, not notarized — clear the quarantine flag before first launch:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/ClaudeUsageBar.app
+```
+
+(Or right-click the app and choose **Open**; on macOS 15+ you may also need
+System Settings > Privacy & Security > **Open Anyway**.)
+
+Once running: open the dropdown, click **Settings…**, and enable
+**Launch at login** so it starts with your Mac.
+
+### Build from source
+
+Requires the Swift toolchain — Xcode Command Line Tools is enough
+(`xcode-select --install`), no full Xcode needed:
 
 ```sh
 git clone https://github.com/icedumpy/claude-code-usage-bar.git
@@ -81,19 +111,13 @@ cd claude-code-usage-bar
 ./scripts/install.sh        # builds the universal .app, installs to /Applications, launches
 ```
 
-First launch may show a Gatekeeper prompt (the app is ad-hoc signed, not
-notarized): right-click the app in `/Applications` and choose **Open** once, or
-run `xattr -dr com.apple.quarantine /Applications/ClaudeUsageBar.app`.
-
-Open the dropdown, click **Settings…**, and enable **Launch at login** so it
-starts with your Mac.
+A locally built app has no quarantine flag, so no Gatekeeper dance is needed.
 
 ## Updating
 
-```sh
-git pull
-./scripts/install.sh        # rebuilds and replaces the installed app
-```
+The dropdown shows an **Update available** banner when a new release is out —
+click it, or just re-run the one-line installer above. Building from source?
+`git pull && ./scripts/install.sh`.
 
 Your custom icons and settings live in
 `~/Library/Application Support/ClaudeUsageBar/` and are **not** touched by an
@@ -143,11 +167,13 @@ swift test                              # run the unit tests (Swift Testing)
 
 ## Distributing
 
-The repo is the simplest path — people clone and run `./scripts/install.sh`. For
-a double-click, notarized download you would need an Apple Developer account
-($99/yr) to Developer-ID-sign and notarize the `.app`. The default icons are
-plain colored circles (original artwork, no third-party marks), so the repo is
-safe to share as-is.
+Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds the
+universal app and publishes `ClaudeUsageBar.zip` on GitHub Releases — that zip
+is what the one-line installer and the in-app update banner point at. The app
+is ad-hoc signed; removing the Gatekeeper warning entirely would require an
+Apple Developer account ($99/yr) to Developer-ID-sign and notarize (roadmap).
+The default icons are plain colored circles (original artwork, no third-party
+marks), so the repo is safe to share as-is.
 
 ## Notes
 

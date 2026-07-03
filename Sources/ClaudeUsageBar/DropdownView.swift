@@ -75,7 +75,10 @@ struct DropdownView: View {
     private func snapshotView(_ snap: UsageSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(spacing: 11) {
-                ForEach(snap.limitRows) { LimitRowView(row: $0, style: store.vizStyle) }
+                ForEach(snap.limitRows) {
+                    LimitRowView(row: $0, style: store.vizStyle,
+                                 isHero: $0.id == store.heroRowID)
+                }
             }
             if !snap.models.isEmpty {
                 Divider()
@@ -132,13 +135,17 @@ struct DropdownView: View {
 struct LimitRowView: View {
     let row: LimitRow
     let style: VisualizationStyle
+    /// Whether this row drives the menu bar right now. Comes from the store
+    /// (`heroRowID`) so the badge follows the user's "Driven by" choice, not
+    /// the snapshot's default hero.
+    let isHero: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 Text(row.label)
-                    .font(.callout.weight(row.isHero ? .semibold : .regular))
-                if row.isHero {
+                    .font(.callout.weight(isHero ? .semibold : .regular))
+                if isHero {
                     Text("now")
                         .font(.system(size: 9, weight: .semibold))
                         .padding(.horizontal, 5).padding(.vertical, 1)

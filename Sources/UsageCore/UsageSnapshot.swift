@@ -86,7 +86,9 @@ public struct UsageSnapshot: Sendable, Equatable {
     }
 
     private static func isSameLimit(_ a: Limit, _ b: Limit) -> Bool {
-        a.kind == b.kind && a.modelName == b.modelName && a.percent == b.percent
+        // resetsAt, not percent: two limits can share a percent by coincidence,
+        // but kind+model+window identifies one limit (same key as the row id).
+        a.kind == b.kind && a.modelName == b.modelName && a.resetsAt == b.resetsAt
     }
 }
 
@@ -123,18 +125,7 @@ public extension UsageSnapshot {
         case .weeklyScoped: pool = limitRows.filter { $0.kind == "weekly_scoped" }
         }
         return pool.max {
-            (Self.severityRank($0.severity), $0.percent)
-                < (Self.severityRank($1.severity), $1.percent)
-        }
-    }
-
-    private static func severityRank(_ s: Severity) -> Int {
-        switch s {
-        case .unknown: return -1   // unknown always loses to any real severity
-        case .normal: return 0
-        case .warning: return 1
-        case .severe: return 2
-        case .critical: return 3
+            ($0.severity.rank, $0.percent) < ($1.severity.rank, $1.percent)
         }
     }
 }

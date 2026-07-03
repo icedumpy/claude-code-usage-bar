@@ -8,12 +8,18 @@ final class NotificationManager {
     static let shared = NotificationManager()
     private init() {}
 
+    /// UNUserNotificationCenter traps in a non-bundled process (e.g. a bare
+    /// `swift run` / `.build/release` binary), so alerts only work in the .app.
+    private let available = Bundle.main.bundleIdentifier != nil
+
     func requestAuthorization() {
+        guard available else { return }
         UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     func fire(_ alert: ThresholdAlert) {
+        guard available else { return }
         let content = UNMutableNotificationContent()
         content.title = alert.title
         content.body = alert.body

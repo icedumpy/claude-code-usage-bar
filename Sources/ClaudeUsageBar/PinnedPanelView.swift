@@ -71,9 +71,12 @@ struct PinnedPanelView: View {
     }
 
     private func rows(_ snap: UsageSnapshot) -> some View {
+        // "Show weekly limits" off trims to the limit driving the menu bar, so
+        // the panel and the menu bar always talk about the same window.
         VStack(spacing: 10) {
-            ForEach(snap.limitRows.filter { $0.isHero || store.pinShowWeekly }) { row in
-                LimitRowView(row: row, style: store.vizStyle)
+            ForEach(snap.limitRows.filter { $0.id == store.heroRowID || store.pinShowWeekly }) { row in
+                LimitRowView(row: row, style: store.vizStyle,
+                             isHero: row.id == store.heroRowID)
             }
         }
     }
