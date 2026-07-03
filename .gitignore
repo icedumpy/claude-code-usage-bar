@@ -2,7 +2,10 @@
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon
+# Finder custom-icon files ("Icon\r"). A bare "Icon" also matches the icon/
+# source directory (macOS git ignores case), which kept AppIcon.icns out of
+# git and broke the release build.
+Icon?
 ._*
 
 # Xcode (in case the package is opened in Xcode)

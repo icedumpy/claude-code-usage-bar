@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2B3050"/>
+      <stop offset="1" stop-color="#171A28"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded-square tile -->
+  <rect x="72" y="72" width="880" height="880" rx="200" fill="url(#bg)"/>
+  <!-- usage gauge: track + filled arc (~66%) -->
+  <circle cx="512" cy="512" r="288" fill="none" stroke="#3B4267" stroke-width="96"/>
+  <circle cx="512" cy="512" r="288" fill="none" stroke="#4CAF50" stroke-width="96"
+          stroke-linecap="round" stroke-dasharray="1194 615"
+          transform="rotate(-90 512 512)"/>
+  <!-- signature center dot (echoes the menu bar mark) -->
+  <circle cx="512" cy="512" r="86" fill="#4CAF50"/>
+</svg>
