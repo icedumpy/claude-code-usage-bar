@@ -11,7 +11,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published private(set) var updateInfo: UpdateInfo?
     @Published var refreshInterval: TimeInterval {
-        didSet { schedule() }
+        didSet { Defaults.set("refreshInterval", refreshInterval); schedule() }
     }
 
     @Published var alertsEnabled = Defaults.value("alertsEnabled", true) {
@@ -57,7 +57,7 @@ final class UsageStore: ObservableObject {
 
     private let client: UsageFetching
     private let credentials: CredentialReading
-    private let costEngine = CostEngine()
+    private let costEngine: CostEngine
     private var timer: Timer?
     private var inFlight = false
     private var alertState = AlertState()
@@ -66,21 +66,24 @@ final class UsageStore: ObservableObject {
 
     init(client: UsageFetching,
          credentials: CredentialReading,
-         refreshInterval: TimeInterval = 60) {
+         refreshInterval: TimeInterval? = nil,
+         costEngine: CostEngine = CostEngine()) {
         self.client = client
         self.credentials = credentials
+        self.costEngine = costEngine
+        // didSet does not fire during init, so the stored value isn't rewritten.
         self.refreshInterval = refreshInterval
+            ?? Defaults.value("refreshInterval", TimeInterval(60))
     }
 
     /// Convenience production wiring. Reads the credential via `/usr/bin/security`,
     /// which accesses the item without a blocking keychain-ACL dialog (a freshly
     /// signed app is not in the item's trust list, so the Security-framework path
     /// would prompt on every poll).
-    static func live(refreshInterval: TimeInterval = 60) -> UsageStore {
+    static func live() -> UsageStore {
         let creds = ShellCredentialProvider()
         return UsageStore(client: UsageClient(credentials: creds),
-                          credentials: creds,
-                          refreshInterval: refreshInterval)
+                          credentials: creds)
     }
 
     func start() {
@@ -99,6 +102,8 @@ final class UsageStore: ObservableObject {
         let t = Timer(timeInterval: refreshInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
+        // Let the system coalesce wakeups — exact firing doesn't matter here.
+        t.tolerance = refreshInterval * 0.1
         RunLoop.main.add(t, forMode: .common)
         timer = t
     }
@@ -135,7 +140,9 @@ final class UsageStore: ObservableObject {
                                                        thresholds: [warnThreshold, critThreshold])
                 alerts.forEach { NotificationManager.shared.fire($0) }
             }
-        } catch UsageError.unauthorized, CredentialError.notFound {
+        } catch UsageError.unauthorized, CredentialError.notFound, CredentialError.malformed {
+            // .malformed means the keychain item exists but is unreadable — like
+            // a missing token, that needs the user to sign in again, not retries.
             phase = .signedOut
             failureStreak = 0
             backoffUntil = nil
@@ -162,6 +169,12 @@ final class UsageStore: ObservableObject {
     /// session-based hero if that limit isn't present).
     private var heroRow: LimitRow? { displaySnapshot?.menuBarRow(for: heroChoice) }
 
+    /// Id of the row the views should badge as "now" — the same limit the menu
+    /// bar is driven by, so the dropdown and pinned panel never disagree with it.
+    var heroRowID: String? {
+        heroRow?.id ?? displaySnapshot?.limitRows.first(where: { $0.isHero })?.id
+    }
+
     /// Menu bar text (no emoji — the tinted Claude mark carries the color):
     /// percent, dollars, or both, per `menuBarDisplay`. "…" loading, "!" signed out.
     var menuBarText: String {
@@ -173,8 +186,8 @@ final class UsageStore: ObservableObject {
         guard let snap = displaySnapshot else { return "!" }
         let pct = heroRow?.percent ?? snap.heroPercent
         let pctStr = pct.map { Formatting.percent($0) } ?? "—"
-        // totalCostUSD comes from local CostEngine history, so it stays current
-        // even when `snap` is a lastSnapshot held over an error.
+        // totalCostUSD is baked into the snapshot, so over an error it shows the
+        // last-known value — same staleness as the rest of the row.
         let dollarStr = Formatting.dollars(snap.totalCostUSD)
         switch menuBarDisplay {
         case .percent: return pctStr

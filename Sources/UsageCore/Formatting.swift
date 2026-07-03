@@ -12,11 +12,21 @@ public enum Formatting {
         }
     }
 
-    /// Notional dollars: $3.20, $0.84, $12.
+    /// Notional dollars: $3.20, $0.84, $112, $1,612.
     public static func dollars(_ v: Double) -> String {
-        if v >= 100 { return "$" + String(format: "%.0f", v) }
+        if v >= 100 { return "$" + (grouped.string(from: NSNumber(value: v.rounded())) ?? String(format: "%.0f", v)) }
         return "$" + String(format: "%.2f", v)
     }
+
+    /// Fixed en_US grouping so the menu bar reads the same on every locale
+    /// (and matches the "$" prefix).
+    private static let grouped: NumberFormatter = {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US")
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f
+    }()
 
     public static func percent(_ p: Double) -> String {
         String(format: "%.0f%%", p)

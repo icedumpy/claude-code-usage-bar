@@ -14,13 +14,15 @@ public enum Severity: String, Decodable, Sendable {
     }
 
     /// Worst-wins ordering so the hero color reflects the most urgent limit.
+    /// The single source of truth for severity comparisons: `.unknown` always
+    /// loses to any real severity.
     public var rank: Int {
         switch self {
+        case .unknown: return -1
         case .normal: return 0
-        case .unknown: return 1
-        case .warning: return 2
-        case .severe: return 3
-        case .critical: return 4
+        case .warning: return 1
+        case .severe: return 2
+        case .critical: return 3
         }
     }
 }

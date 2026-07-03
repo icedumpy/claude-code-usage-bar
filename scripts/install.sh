@@ -9,7 +9,9 @@ APP_NAME="ClaudeUsageBar"
 ./scripts/build_app.sh
 
 echo "==> quitting any running instance"
-osascript -e "tell application \"$APP_NAME\" to quit" 2>/dev/null || true
+# killall, not osascript: an Apple Events quit needs an automation-permission
+# grant and can silently fail, leaving the old instance running after "update".
+if killall "$APP_NAME" 2>/dev/null; then sleep 1; fi
 
 echo "==> installing to /Applications"
 # ditto overwrites in place; your icons/settings live in
