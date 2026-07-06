@@ -58,6 +58,7 @@ final class UsageStore: ObservableObject {
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine: CostEngine
+    private let syncWriter = ScriptableSyncWriter()
     private var timer: Timer?
     private var updateCheckTask: Task<Void, Never>?
     private var inFlight = false
@@ -146,6 +147,12 @@ final class UsageStore: ObservableObject {
             phase = .ok(snapshot)
             failureStreak = 0
             backoffUntil = nil
+            // Publish a compact snapshot for the iPhone Scriptable widget.
+            // Best-effort and off the main actor: heroRow reflects the user's
+            // hero choice, and a failed/skipped write never affects the refresh.
+            let syncSnap = SyncSnapshot.from(snapshot: snapshot, heroRow: heroRow)
+            let writer = syncWriter
+            Task.detached { writer.write(syncSnap) }
             if alertsEnabled {
                 let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState,
                                                        thresholds: [warnThreshold, critThreshold])
