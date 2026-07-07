@@ -52,6 +52,14 @@ struct SettingsView: View {
                     .disabled(!store.alertsEnabled)
             }
 
+            Section("iPhone widget") {
+                Toggle("Sync to iPhone widget", isOn: $store.syncToWidget)
+                Text("Publishes usage to Scriptable's iCloud folder so a free "
+                     + "Scriptable widget can show it on your phone. Only computed "
+                     + "numbers sync — never your token.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             Section("General") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { newValue in
@@ -62,6 +70,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360, height: 590)
+        .frame(width: 360, height: 680)
     }
 }

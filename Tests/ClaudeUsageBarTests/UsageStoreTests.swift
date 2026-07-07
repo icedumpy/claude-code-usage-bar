@@ -137,4 +137,42 @@ struct UsageStoreTests {
                                 credentials: MockCredentials())
         #expect(second.refreshInterval == 300)
     }
+
+    @Test @MainActor func widgetSyncWritesFileOnlyWhenOptedIn() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("widget-gate-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let file = dir.appendingPathComponent(ScriptableSyncWriter.fileName)
+
+        func store(sync: Bool) throws -> UsageStore {
+            let tmp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("cost-\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+            let s = UsageStore(client: MockClient(.success(try fixtureResponse())),
+                               credentials: MockCredentials(),
+                               refreshInterval: 60,
+                               costEngine: CostEngine(projectsDir: tmp),
+                               syncWriter: ScriptableSyncWriter(directory: dir))
+            s.alertsEnabled = false
+            s.syncToWidget = sync
+            return s
+        }
+
+        // Opted out: a successful refresh writes nothing.
+        let optedOut = try store(sync: false)
+        await optedOut.refresh(force: true)
+        try? await Task.sleep(for: .milliseconds(150))
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+
+        // Opted in: the widget file appears. The write is off-main
+        // (Task.detached), so poll briefly for it.
+        let optedIn = try store(sync: true)
+        await optedIn.refresh(force: true)
+        var wrote = false
+        for _ in 0..<50 where !wrote {
+            if FileManager.default.fileExists(atPath: file.path) { wrote = true; break }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(wrote)
+    }
 }
