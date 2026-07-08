@@ -100,9 +100,12 @@ function agoText(iso) {
 }
 
 // --- Ring drawing ------------------------------------------------------------
+// Draws the track + progress arc AND the percent number in the donut hole, so
+// the caller needs only one compact element instead of a ring plus a separate
+// (tall) percent line — the layout has to fit a ~155pt small widget.
 function drawRing(percent, color) {
   const size = 120;
-  const line = 14;
+  const line = 13;
   const ctx = new DrawContext();
   ctx.size = new Size(size, size);
   ctx.opaque = false;
@@ -115,6 +118,13 @@ function drawRing(percent, color) {
   // Track (full circle) then the progress arc on top, drawn as short segments.
   drawArc(ctx, center, radius, line, 0, 1, COLORS.track);
   if (frac > 0) drawArc(ctx, center, radius, line, 0, frac, color);
+
+  // Percent, centered in the hole. Rect is top-aligned, so offset y to center.
+  const text = percent == null ? "—" : `${Math.round(percent)}%`;
+  ctx.setTextAlignedCenter();
+  ctx.setTextColor(COLORS.text);
+  ctx.setFont(Font.boldSystemFont(34));
+  ctx.drawTextInRect(text, new Rect(0, size / 2 - 24, size, 48));
 
   return ctx.getImage();
 }
@@ -139,7 +149,11 @@ function drawArc(ctx, center, radius, width, startFrac, endFrac, color) {
 async function build() {
   const w = new ListWidget();
   w.backgroundColor = COLORS.bg;
-  w.setPadding(14, 14, 14, 14);
+  w.setPadding(12, 14, 12, 14);
+  // Nudge WidgetKit to redraw within ~15 min. It's only a hint (the OS owns the
+  // real budget, and StandBy/always-on throttles harder), but without it a
+  // charging bedside widget can sit stale far longer.
+  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
 
   const { state, snap } = await loadSnapshot();
 
@@ -152,24 +166,17 @@ async function build() {
 
   const header = w.addText("Claude");
   header.textColor = COLORS.subtle;
-  header.font = Font.mediumSystemFont(13);
-  w.addSpacer(6);
+  header.font = Font.mediumSystemFont(12);
+  w.addSpacer(4);
 
-  // Ring + percent, centered.
-  const row = w.addStack();
-  row.addSpacer();
-  const ringImg = w.addStack();
-  ringImg.addSpacer();
-  const img = ringImg.addImage(drawRing(snap.heroPercent, tint));
-  img.imageSize = new Size(84, 84);
-  ringImg.addSpacer();
-  row.addSpacer();
+  // Ring (with the percent drawn inside it), horizontally centered.
+  const ringRow = w.addStack();
+  ringRow.addSpacer();
+  const img = ringRow.addImage(drawRing(snap.heroPercent, tint));
+  img.imageSize = new Size(62, 62);
+  ringRow.addSpacer();
 
-  const pctText = snap.heroPercent == null ? "—" : `${Math.round(snap.heroPercent)}%`;
-  const pct = w.addText(pctText);
-  pct.centerAlignText();
-  pct.textColor = COLORS.text;
-  pct.font = Font.boldSystemFont(22);
+  w.addSpacer(4);
 
   const label = w.addText(snap.heroLabel || "");
   label.centerAlignText();
@@ -181,10 +188,14 @@ async function build() {
   const cd = snap.resetsAt ? countdown(snap.resetsAt) : null;
   if (cd) {
     const c = w.addText(cd);
+    c.centerAlignText();
     c.textColor = COLORS.subtle;
     c.font = Font.systemFont(11);
   }
-  const ago = w.addText(agoText(snap.updatedAt));
+  // Spell out staleness in words, not just color: StandBy's Night Mode tints
+  // everything red, which would erase a red-only "stale" signal.
+  const ago = w.addText(stale ? `STALE · ${agoText(snap.updatedAt)}` : agoText(snap.updatedAt));
+  ago.centerAlignText();
   ago.textColor = stale ? COLORS.critical : COLORS.subtle;
   ago.font = Font.systemFont(10);
 

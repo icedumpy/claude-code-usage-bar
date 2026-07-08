@@ -24,6 +24,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 lipo -create "$ARM" "$X86" -output "$APP/Contents/MacOS/$APP_NAME"
 lipo -info "$APP/Contents/MacOS/$APP_NAME"
 cp "$ROOT/icon/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+# Ship the Scriptable widget script so the app can drop it into Scriptable's
+# iCloud folder — the iPhone user never has to paste it by hand.
+cp "$ROOT/scriptable/usage-widget.js" "$APP/Contents/Resources/usage-widget.js"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

@@ -127,15 +127,46 @@ data gets stale.
 <details>
 <summary>One-time setup</summary>
 
+**Before you start**, this needs iCloud to carry the file from your Mac to your
+phone, so:
+
+- Your **Mac and iPhone must be signed into the same iCloud account** (Apple ID).
+  Check on the Mac in **System Settings → [your name]** and on the phone in
+  **Settings → [your name]** — the email at the top should match.
+- **iCloud Drive must be on** on *both*. On the Mac: **System Settings → [your
+  name] → iCloud → iCloud Drive → on**. On the phone: same path.
+
+If those don't match, the phone will never see the data no matter what else you
+do — that's the most common reason it "doesn't work."
+
 1. Install **Scriptable** from the App Store and turn on iCloud Drive for it
    (Settings → your name → iCloud → Drive → **Scriptable** on).
-2. In this app's **Settings**, turn on **Sync to iPhone widget**.
-3. Run the Mac app once so it writes the summary file.
-4. In Scriptable, create a new script, paste in the contents of
-   [`scriptable/usage-widget.js`](scriptable/usage-widget.js), and name it
-   **ClaudeUsage**.
-5. On your phone's home screen: long-press → add a small **Scriptable** widget →
-   edit it → choose the **ClaudeUsage** script.
+2. In this app's **Settings**, turn on **Sync to iPhone widget**. The Settings
+   panel then shows the sync status, so you can tell when your phone is connected.
+3. Run the Mac app once. It writes the usage summary **and** drops the widget
+   script (**ClaudeUsage**) straight into Scriptable — no copying and pasting.
+4. Open **Scriptable** on your phone. After iCloud syncs (a minute or two), a
+   script named **ClaudeUsage** appears in the list. Tap it once to check it runs.
+5. Add it to your home screen: long-press → add a small **Scriptable** widget →
+   edit it → choose **ClaudeUsage**.
+
+**On the nightstand (StandBy):** on iOS 17+ you can show this in StandBy — the
+sideways, always-on view while the phone charges. Turn the phone landscape on a
+charger to enter StandBy, swipe to the widgets panel, long-press → **+** → add a
+small **Scriptable** widget → choose **ClaudeUsage**. It refreshes on your Mac's
+schedule and spells out "STALE" if the data gets old (handy since StandBy's night
+tint would otherwise hide a color-only warning).
+
+**If the script or numbers don't show up right away:** the first iCloud sync can
+take a few minutes, especially if you just turned iCloud Drive on. Keep both
+devices on Wi-Fi and open Scriptable on the phone for a moment to nudge it. The
+app's **Settings** panel tells you whether it's still "waiting for Scriptable's
+iCloud folder" or already synced.
+
+*Already set the widget up by hand before?* If you pasted the script yourself,
+the app won't touch your copy (it never overwrites your edits). To switch to the
+auto-updating one, delete your **ClaudeUsage** script in Scriptable and run the
+Mac app again — it'll reinstall a managed copy.
 
 If Scriptable isn't installed, the Mac app just skips this — nothing else
 changes.

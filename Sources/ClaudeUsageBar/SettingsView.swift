@@ -58,6 +58,12 @@ struct SettingsView: View {
                      + "Scriptable widget can show it on your phone. Only computed "
                      + "numbers sync — never your token.")
                     .font(.caption).foregroundStyle(.secondary)
+                if store.syncToWidget, let detail = store.widgetSyncStatus.detail {
+                    Label(detail, systemImage: store.widgetSyncStatus.isWaiting
+                          ? "clock.arrow.circlepath" : "checkmark.icloud")
+                        .font(.caption)
+                        .foregroundStyle(store.widgetSyncStatus.isWaiting ? .orange : .secondary)
+                }
             }
 
             Section("General") {

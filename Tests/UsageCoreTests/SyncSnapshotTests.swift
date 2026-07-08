@@ -77,6 +77,61 @@ struct SyncSnapshotTests {
         #expect(back.heroPercent == 90)
     }
 
+    @Test func installScriptWritesWhenAbsent() throws {
+        let dir = try makeTempDir("script-new")
+        let writer = ScriptableSyncWriter(directory: dir)
+        #expect(writer.installScript("BODY") == .installed)
+        let file = dir.appendingPathComponent(ScriptableSyncWriter.scriptFileName)
+        let text = try String(contentsOf: file, encoding: .utf8)
+        #expect(WidgetScriptInstall.managedVersion(of: text) == WidgetScriptInstall.currentVersion)
+        #expect(text.hasSuffix("\nBODY"))
+    }
+
+    @Test func installScriptSkipsWhenUpToDate() throws {
+        let dir = try makeTempDir("script-upto")
+        let writer = ScriptableSyncWriter(directory: dir)
+        #expect(writer.installScript("BODY") == .installed)
+        #expect(writer.installScript("BODY-CHANGED") == .upToDate)
+    }
+
+    @Test func installScriptNeverClobbersUserScript() throws {
+        // A file without our marker is the user's own — leave it untouched.
+        let dir = try makeTempDir("script-user")
+        let file = dir.appendingPathComponent(ScriptableSyncWriter.scriptFileName)
+        try "// my own widget\nlet x = 1".write(to: file, atomically: true, encoding: .utf8)
+        let writer = ScriptableSyncWriter(directory: dir)
+        #expect(writer.installScript("BODY") == .userOwned)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "// my own widget\nlet x = 1")
+    }
+
+    @Test func installScriptDoesNotClobberUndownloadedPlaceholder() throws {
+        // An iCloud file not yet downloaded appears only as a ".<name>.icloud"
+        // placeholder; a read failure must not be mistaken for "no file".
+        let dir = try makeTempDir("script-ph")
+        let placeholder = dir.appendingPathComponent(".\(ScriptableSyncWriter.scriptFileName).icloud")
+        try Data().write(to: placeholder)
+        let writer = ScriptableSyncWriter(directory: dir)
+        #expect(writer.installScript("BODY") == .userOwned)
+        // We did not create the real file over the placeholder.
+        #expect(!FileManager.default.fileExists(
+            atPath: dir.appendingPathComponent(ScriptableSyncWriter.scriptFileName).path))
+    }
+
+    @Test func installScriptReinstallsOlderManagedVersion() throws {
+        let dir = try makeTempDir("script-old")
+        let file = dir.appendingPathComponent(ScriptableSyncWriter.scriptFileName)
+        try WidgetScriptInstall.stamped("OLD", version: 0).write(to: file, atomically: true, encoding: .utf8)
+        let writer = ScriptableSyncWriter(directory: dir)
+        #expect(writer.installScript("NEW") == .installed)
+        #expect(try String(contentsOf: file, encoding: .utf8).hasSuffix("\nNEW"))
+    }
+
+    @Test func installScriptSkipsWhenFolderAbsent() {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("script-absent-\(UUID().uuidString)", isDirectory: true)
+        #expect(ScriptableSyncWriter(directory: dir).installScript("BODY") == .folderMissing)
+    }
+
     private func makeTempDir(_ tag: String) throws -> URL {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(tag)-\(UUID().uuidString)", isDirectory: true)
