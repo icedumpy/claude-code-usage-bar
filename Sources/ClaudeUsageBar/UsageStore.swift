@@ -37,8 +37,8 @@ final class UsageStore: ObservableObject {
     @Published var pinOpacity = PinnedPanelGeometry.clampOpacity(Defaults.value("pinOpacity", 0.95)) {
         didSet { Defaults.set("pinOpacity", pinOpacity) }
     }
-    @Published var pinScale = PinnedPanelGeometry.clampScale(Defaults.value("pinScale", 1.0)) {
-        didSet { Defaults.set("pinScale", pinScale) }
+    @Published var pinWidth = PinnedPanelGeometry.clampWidth(UsageStore.initialPinWidth()) {
+        didSet { Defaults.set("pinWidth", pinWidth) }
     }
     @Published var pinShowWeekly = Defaults.value("pinShowWeekly", true) {
         didSet { Defaults.set("pinShowWeekly", pinShowWeekly) }
@@ -85,6 +85,17 @@ final class UsageStore: ObservableObject {
         // didSet does not fire during init, so the stored value isn't rewritten.
         self.refreshInterval = refreshInterval
             ?? Defaults.value("refreshInterval", TimeInterval(60))
+    }
+
+    /// Initial pinned-panel width. Prefers a saved `pinWidth`; otherwise
+    /// migrates a pre-width `pinScale` (the old uniform-zoom factor) once so an
+    /// existing user's panel keeps roughly its former size, falling back to the
+    /// default width on a clean install.
+    private static func initialPinWidth() -> Double {
+        let d = UserDefaults.standard
+        if d.object(forKey: "pinWidth") != nil { return Defaults.value("pinWidth", PinnedPanelGeometry.defaultWidth) }
+        if let scale = d.object(forKey: "pinScale") as? Double { return PinnedPanelGeometry.defaultWidth * scale }
+        return PinnedPanelGeometry.defaultWidth
     }
 
     /// Convenience production wiring. Reads the credential via `/usr/bin/security`,

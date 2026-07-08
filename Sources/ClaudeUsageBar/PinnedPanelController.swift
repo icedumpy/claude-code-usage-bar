@@ -37,7 +37,7 @@ final class PinnedPanelController: NSObject, NSWindowDelegate {
         p.isFloatingPanel = true
         p.level = .floating
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        p.isMovableByWindowBackground = true
+        p.isMovableByWindowBackground = false
         p.backgroundColor = .clear
         p.isOpaque = false
         p.hasShadow = true
