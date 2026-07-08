@@ -55,9 +55,17 @@ final class UsageStore: ObservableObject {
         didSet { Defaults.setRaw("heroChoice", heroChoice) }
     }
 
+    /// Opt-in: publish a compact snapshot to Scriptable's iCloud folder for an
+    /// iPhone widget. Off by default so the app never writes to a user's iCloud
+    /// unless they ask — even if Scriptable happens to be installed.
+    @Published var syncToWidget = Defaults.value("syncToWidget", false) {
+        didSet { Defaults.set("syncToWidget", syncToWidget) }
+    }
+
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine: CostEngine
+    private let syncWriter: ScriptableSyncWriter
     private var timer: Timer?
     private var updateCheckTask: Task<Void, Never>?
     private var inFlight = false
@@ -68,10 +76,12 @@ final class UsageStore: ObservableObject {
     init(client: UsageFetching,
          credentials: CredentialReading,
          refreshInterval: TimeInterval? = nil,
-         costEngine: CostEngine = CostEngine()) {
+         costEngine: CostEngine = CostEngine(),
+         syncWriter: ScriptableSyncWriter = ScriptableSyncWriter()) {
         self.client = client
         self.credentials = credentials
         self.costEngine = costEngine
+        self.syncWriter = syncWriter
         // didSet does not fire during init, so the stored value isn't rewritten.
         self.refreshInterval = refreshInterval
             ?? Defaults.value("refreshInterval", TimeInterval(60))
@@ -146,6 +156,15 @@ final class UsageStore: ObservableObject {
             phase = .ok(snapshot)
             failureStreak = 0
             backoffUntil = nil
+            // Publish a compact snapshot for the iPhone Scriptable widget, only
+            // if the user opted in. Best-effort and off the main actor: heroRow
+            // reflects the user's hero choice, and a failed/skipped write never
+            // affects the refresh.
+            if syncToWidget {
+                let syncSnap = SyncSnapshot.from(snapshot: snapshot, heroRow: heroRow)
+                let writer = syncWriter
+                Task.detached { writer.write(syncSnap) }
+            }
             if alertsEnabled {
                 let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState,
                                                        thresholds: [warnThreshold, critThreshold])

@@ -123,6 +123,33 @@ Your custom icons and settings live in
 `~/Library/Application Support/ClaudeUsageBar/` and are **not** touched by an
 update, so they survive upgrades.
 
+## iPhone widget (optional)
+
+Check your usage from your phone's home screen, synced from the Mac — no Apple
+Developer account, no App Store. It works through [Scriptable](https://scriptable.app),
+a free app that runs the widget script in `scriptable/usage-widget.js`.
+
+How it works: on each successful refresh the Mac app writes a small
+`usage.json` (hero limit percent, label, reset time, weekly dollars — never your
+token) into Scriptable's iCloud Drive folder. iCloud syncs it to your phone, and
+the widget renders a percent ring plus a reset countdown. It's **sync-stale**,
+not live: the widget shows how long ago it synced and dims when the data is old
+(e.g. your Mac has been off).
+
+Setup (one-time):
+
+1. Install **Scriptable** from the App Store and enable iCloud Drive for it
+   (Settings → your Apple ID → iCloud → Drive → **Scriptable** on). This makes
+   Scriptable's folder appear in your Mac's iCloud Drive.
+2. Run the Mac app once so it writes `usage.json`.
+3. In Scriptable, create a new script, paste in `scriptable/usage-widget.js`,
+   and name it **ClaudeUsage**.
+4. On your home screen: long-press → add a small Scriptable widget → edit it →
+   choose the **ClaudeUsage** script.
+
+If Scriptable isn't installed, the Mac app simply skips the write — nothing
+else changes.
+
 ## Privacy
 
 The app has no embedded secrets and no server of its own. Your OAuth token is
