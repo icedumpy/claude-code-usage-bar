@@ -2,10 +2,21 @@ import Testing
 import Foundation
 @testable import UsageCore
 
-@Test func clampScaleStaysInBounds() {
-    #expect(PinnedPanelGeometry.clampScale(0.1) == PinnedPanelGeometry.minScale)
-    #expect(PinnedPanelGeometry.clampScale(9.0) == PinnedPanelGeometry.maxScale)
-    #expect(PinnedPanelGeometry.clampScale(1.0) == 1.0)
+@Test func clampWidthStaysInBounds() {
+    #expect(PinnedPanelGeometry.clampWidth(10) == PinnedPanelGeometry.minWidth)
+    #expect(PinnedPanelGeometry.clampWidth(9000) == PinnedPanelGeometry.maxWidth)
+    #expect(PinnedPanelGeometry.clampWidth(PinnedPanelGeometry.defaultWidth) == PinnedPanelGeometry.defaultWidth)
+}
+
+@Test func clampedOnScreenSlidesAWiderPanelInFromTheRightEdge() {
+    // Failure mode Codex flagged: a panel anchored at the right edge that grows
+    // wider must slide left to stay fully visible, not spill off-screen.
+    let visible = CGRect(x: 0, y: 0, width: 1440, height: 900)
+    let grown = CGRect(x: 1200, y: 700, width: 400, height: 160)  // maxX 1600 > 1440
+    let result = PinnedPanelGeometry.clampedOnScreen(grown, visible: visible)
+    #expect(result.size == grown.size)
+    #expect(result.maxX == visible.maxX)   // right edge pinned on-screen
+    #expect(result.minX == visible.maxX - grown.width)
 }
 
 @Test func clampOpacityStaysInBounds() {

@@ -3,13 +3,17 @@ import CoreGraphics
 /// Pure geometry/bounds logic for the pinned PiP panel, split out from the
 /// AppKit window code so it can be unit-tested. No UIKit/AppKit here.
 public enum PinnedPanelGeometry {
-    public static let minScale: Double = 0.8
-    public static let maxScale: Double = 1.6
+    /// The pinned panel resizes by width; content reflows and its height
+    /// follows. Bounds keep the bars readable at the low end and stop the
+    /// panel from sprawling at the high end.
+    public static let minWidth: Double = 240
+    public static let maxWidth: Double = 540
+    public static let defaultWidth: Double = 300
     public static let minOpacity: Double = 0.1
     public static let maxOpacity: Double = 1.0
 
-    public static func clampScale(_ s: Double) -> Double {
-        min(maxScale, max(minScale, s))
+    public static func clampWidth(_ w: Double) -> Double {
+        min(maxWidth, max(minWidth, w))
     }
 
     public static func clampOpacity(_ o: Double) -> Double {

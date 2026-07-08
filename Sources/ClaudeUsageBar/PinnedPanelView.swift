@@ -9,22 +9,12 @@ struct PinnedPanelView: View {
     @ObservedObject var store: UsageStore
 
     @State private var hovering = false
-    @State private var naturalSize = CGSize(width: 300, height: 140)
-    @State private var dragStartScale: Double?
-
-    private let baseWidth: CGFloat = 300
+    @State private var dragStartWidth: Double?
 
     var body: some View {
-        let scale = CGFloat(store.pinScale)
         panelBody
-            .frame(width: baseWidth, alignment: .leading)
+            .frame(width: CGFloat(store.pinWidth), alignment: .leading)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(sizeReader)
-            .onPreferenceChange(SizePreferenceKey.self) { naturalSize = $0 }
-            .scaleEffect(scale, anchor: .topLeading)
-            .frame(width: naturalSize.width * scale,
-                   height: naturalSize.height * scale,
-                   alignment: .topLeading)
             .overlay(alignment: .topTrailing) { if hovering { hoverControls } }
             .overlay(alignment: .bottomTrailing) { if hovering { resizeGrip } }
             .opacity(store.pinOpacity)
@@ -127,6 +117,9 @@ struct PinnedPanelView: View {
         .padding(8)
     }
 
+    // Drag the corner to set the panel WIDTH; content reflows and the height
+    // follows. `dragStartWidth` is captured once per gesture so the delta is
+    // measured from a fixed base, not the live (changing) width.
     private var resizeGrip: some View {
         Image(systemName: "arrow.down.right.and.arrow.up.left")
             .font(.system(size: 9, weight: .bold))
@@ -137,22 +130,11 @@ struct PinnedPanelView: View {
             .gesture(
                 DragGesture()
                     .onChanged { v in
-                        if dragStartScale == nil { dragStartScale = store.pinScale }
-                        let delta = Double(v.translation.width) / Double(baseWidth)
-                        store.pinScale = PinnedPanelGeometry.clampScale((dragStartScale ?? 1) + delta)
+                        if dragStartWidth == nil { dragStartWidth = store.pinWidth }
+                        let base = dragStartWidth ?? store.pinWidth
+                        store.pinWidth = PinnedPanelGeometry.clampWidth(base + Double(v.translation.width))
                     }
-                    .onEnded { _ in dragStartScale = nil }
+                    .onEnded { _ in dragStartWidth = nil }
             )
     }
-
-    private var sizeReader: some View {
-        GeometryReader { proxy in
-            Color.clear.preference(key: SizePreferenceKey.self, value: proxy.size)
-        }
-    }
-}
-
-private struct SizePreferenceKey: PreferenceKey {
-    static var defaultValue = CGSize(width: 300, height: 140)
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) { value = nextValue() }
 }
