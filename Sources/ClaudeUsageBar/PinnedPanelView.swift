@@ -1,9 +1,11 @@
+import AppKit
 import SwiftUI
 import UsageCore
 
 /// The detached picture-in-picture usage widget. Shows the same data as the
-/// dropdown, trimmed to the pinned-section prefs, with hover-revealed close /
-/// settings controls and a corner grip that zooms the content. Observes the one
+/// dropdown, trimmed to the pinned-section prefs, with hover-revealed
+/// refresh / settings / close controls and a corner grip that resizes the
+/// panel width (content reflows). Drag the body to move it. Observes the one
 /// shared UsageStore, so it updates every refresh alongside the menu bar.
 struct PinnedPanelView: View {
     @ObservedObject var store: UsageStore
@@ -42,6 +44,7 @@ struct PinnedPanelView: View {
             }
         }
         .padding(12)
+        .background(WindowDragSurface())
     }
 
     private var header: some View {
@@ -57,7 +60,7 @@ struct PinnedPanelView: View {
         }
         // Always reserve room for the hover controls (refresh/gear/close) so
         // they never cover the badge and the header doesn't shift as they fade.
-        .padding(.trailing, 56)
+        .padding(.trailing, 88)
     }
 
     private func rows(_ snap: UsageSnapshot) -> some View {
@@ -105,23 +108,31 @@ struct PinnedPanelView: View {
             // sits leftmost. The signed-out note tells the user to Refresh; this
             // is the button that does it.
             Button { store.refreshNow() } label: {
-                Image(systemName: "arrow.clockwise")
+                hoverControlIcon("arrow.clockwise.circle.fill")
             }
             .disabled(store.isRefreshing)
             Button { SettingsWindowController.shared.show(store: store) } label: {
-                Image(systemName: "gearshape.fill")
+                hoverControlIcon("gearshape.circle.fill")
             }
             Button {
                 store.isPinned = false
                 PinnedPanelController.shared.hide()
             } label: {
-                Image(systemName: "xmark.circle.fill")
+                hoverControlIcon("xmark.circle.fill")
             }
         }
         .buttonStyle(.plain)
-        .font(.system(size: 13))
+        .font(.system(size: 14))
+        .imageScale(.medium)
         .foregroundStyle(.secondary)
         .padding(8)
+    }
+
+    private func hoverControlIcon(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .symbolRenderingMode(.hierarchical)
+            .frame(width: 18, height: 18)
+            .contentShape(Rectangle())
     }
 
     // Drag the corner to set the panel WIDTH; content reflows and the height
@@ -129,12 +140,13 @@ struct PinnedPanelView: View {
     // measured from a fixed base, not the live (changing) width.
     private var resizeGrip: some View {
         Image(systemName: "arrow.down.right.and.arrow.up.left")
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(size: 12, weight: .bold))
             .rotationEffect(.degrees(90))
             .foregroundStyle(.secondary)
-            .padding(6)
+            .frame(width: 26, height: 26)
+            .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
-            .gesture(
+            .highPriorityGesture(
                 DragGesture()
                     .onChanged { v in
                         if dragStartWidth == nil { dragStartWidth = store.pinWidth }
@@ -143,5 +155,22 @@ struct PinnedPanelView: View {
                     }
                     .onEnded { _ in dragStartWidth = nil }
             )
+            .padding(3)
+    }
+}
+
+private struct WindowDragSurface: NSViewRepresentable {
+    func makeNSView(context: Context) -> DragSurfaceView {
+        DragSurfaceView()
+    }
+
+    func updateNSView(_ nsView: DragSurfaceView, context: Context) {}
+
+    final class DragSurfaceView: NSView {
+        override var mouseDownCanMoveWindow: Bool { false }
+
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
+        }
     }
 }
