@@ -2,6 +2,61 @@ import Foundation
 import Combine
 import UsageCore
 
+/// What the iPhone-widget sync is doing right now, surfaced in Settings so a
+/// silent "no Scriptable folder yet" skip becomes an observable state instead
+/// of a mystery during first-time setup.
+enum WidgetSyncStatus: Equatable {
+    case off                       // toggle is off
+    case waitingForFolder          // opted in, but Scriptable's folder hasn't synced to this Mac
+    /// Folder is present. `wroteData` is whether usage.json actually wrote this
+    /// time; `usingUserScript` is true when the user has their own (unmanaged)
+    /// ClaudeUsage.js that we deliberately leave alone.
+    case active(lastWrite: Date, wroteData: Bool, usingUserScript: Bool)
+
+    var isWaiting: Bool { self == .waitingForFolder }
+
+    var detail: String? {
+        switch self {
+        case .off:
+            return nil
+        case .waitingForFolder:
+            return "Waiting for Scriptable's iCloud folder. Install Scriptable on "
+                + "your iPhone and turn on its iCloud Drive; the folder syncs here "
+                + "within a few minutes."
+        case .active(let when, let wroteData, let usingUserScript):
+            let f = DateFormatter()
+            f.timeStyle = .short
+            if !wroteData {
+                return "Connected to Scriptable, but the last write didn't go "
+                    + "through — it will retry on the next refresh."
+            }
+            if usingUserScript {
+                return "Synced (\(f.string(from: when))). Using your own ClaudeUsage "
+                    + "script — the app won't overwrite it."
+            }
+            return "Synced. The ClaudeUsage script and data are in Scriptable — "
+                + "last wrote \(f.string(from: when))."
+        }
+    }
+}
+
+/// Serializes widget-sync file writes so a slow iCloud coordination on one
+/// refresh can't let an older snapshot land after a newer one. Actor calls run
+/// to completion in arrival order (the work here has no internal awaits), which
+/// gives the ordering the fire-and-forget `Task.detached` version lacked.
+actor WidgetSyncCoordinator {
+    struct Result { let wroteData: Bool; let script: ScriptableSyncWriter.ScriptInstallOutcome }
+    private let writer: ScriptableSyncWriter
+
+    init(writer: ScriptableSyncWriter) { self.writer = writer }
+
+    func sync(_ snapshot: SyncSnapshot, scriptBody: String?) -> Result {
+        let wrote = writer.write(snapshot)
+        let outcome = scriptBody.map { writer.installScript($0) } ?? .folderMissing
+        return Result(wroteData: wrote, script: outcome)
+    }
+}
+
 /// Polls the usage API + cost engine on an interval and publishes one phase.
 @MainActor
 final class UsageStore: ObservableObject {
@@ -59,13 +114,29 @@ final class UsageStore: ObservableObject {
     /// iPhone widget. Off by default so the app never writes to a user's iCloud
     /// unless they ask — even if Scriptable happens to be installed.
     @Published var syncToWidget = Defaults.value("syncToWidget", false) {
-        didSet { Defaults.set("syncToWidget", syncToWidget) }
+        didSet {
+            Defaults.set("syncToWidget", syncToWidget)
+            if !syncToWidget { widgetSyncStatus = .off }
+        }
     }
+
+    /// Live state of the iPhone-widget sync, shown in Settings.
+    @Published private(set) var widgetSyncStatus: WidgetSyncStatus = .off
+
+    /// The widget script shipped in the app bundle (copied there by
+    /// `build_app.sh`). The Mac drops this into Scriptable's folder so users
+    /// don't paste it by hand. Nil in dev runs without the bundled resource.
+    private static let bundledWidgetScript: String? = {
+        guard let url = Bundle.main.url(forResource: "usage-widget", withExtension: "js")
+        else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }()
 
     private let client: UsageFetching
     private let credentials: CredentialReading
     private let costEngine: CostEngine
     private let syncWriter: ScriptableSyncWriter
+    private let widgetSync: WidgetSyncCoordinator
     private var timer: Timer?
     private var updateCheckTask: Task<Void, Never>?
     private var inFlight = false
@@ -82,6 +153,7 @@ final class UsageStore: ObservableObject {
         self.credentials = credentials
         self.costEngine = costEngine
         self.syncWriter = syncWriter
+        self.widgetSync = WidgetSyncCoordinator(writer: syncWriter)
         // didSet does not fire during init, so the stored value isn't rewritten.
         self.refreshInterval = refreshInterval
             ?? Defaults.value("refreshInterval", TimeInterval(60))
@@ -168,13 +240,18 @@ final class UsageStore: ObservableObject {
             failureStreak = 0
             backoffUntil = nil
             // Publish a compact snapshot for the iPhone Scriptable widget, only
-            // if the user opted in. Best-effort and off the main actor: heroRow
-            // reflects the user's hero choice, and a failed/skipped write never
+            // if the user opted in. Serialized through an actor (off the main
+            // actor) so writes can't reorder; the script install rides along so
+            // a first-time user never pastes it. A failed/skipped write never
             // affects the refresh.
             if syncToWidget {
                 let syncSnap = SyncSnapshot.from(snapshot: snapshot, heroRow: heroRow)
-                let writer = syncWriter
-                Task.detached { writer.write(syncSnap) }
+                let scriptBody = Self.bundledWidgetScript
+                Task { [weak self] in
+                    guard let self else { return }
+                    let result = await self.widgetSync.sync(syncSnap, scriptBody: scriptBody)
+                    self.setWidgetStatus(wroteData: result.wroteData, script: result.script)
+                }
             }
             if alertsEnabled {
                 let alerts = ThresholdAlerter.evaluate(limits: usage.limits, state: &alertState,
@@ -194,6 +271,22 @@ final class UsageStore: ObservableObject {
             failureStreak += 1
             backoffUntil = Date().addingTimeInterval(
                 min(refreshInterval * pow(2, Double(failureStreak)), 900))
+        }
+    }
+
+    /// Fold the sync result into the user-visible status. Only a missing folder
+    /// is "waiting"; otherwise the pipe is connected, and we report honestly
+    /// whether the data write landed and whether the user's own script is in use.
+    private func setWidgetStatus(wroteData: Bool,
+                                 script: ScriptableSyncWriter.ScriptInstallOutcome) {
+        guard syncToWidget else { widgetSyncStatus = .off; return }
+        switch script {
+        case .folderMissing:
+            widgetSyncStatus = .waitingForFolder
+        case .installed, .upToDate, .userOwned, .failed:
+            widgetSyncStatus = .active(lastWrite: Date(),
+                                       wroteData: wroteData,
+                                       usingUserScript: script == .userOwned)
         }
     }
 
