@@ -2,223 +2,171 @@
 
 [![CI](https://github.com/icedumpy/claude-code-usage-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/icedumpy/claude-code-usage-bar/actions/workflows/ci.yml)
 
-A native macOS menu bar app that shows your Claude Code usage at a glance — your
-5-hour rate-limit headroom in the menu bar, weekly limits and a per-model
-token/cost breakdown in the dropdown, and a notification before you hit a wall.
+A tiny menu bar app for your Mac that shows how much of your Claude Code usage
+you've got left — right next to the clock, so you always know before you hit a
+limit.
 
 <p align="center">
-  <img src="docs/hero-race.png" alt="Claude Usage Bar — menu bar badge and dropdown with usage-vs-time race bars" width="340">
+  <img src="docs/hero-race.png" alt="Claude Usage Bar — the menu bar badge and its dropdown" width="340">
 </p>
 
-## Features
+## What it does
 
-- **Menu bar:** a colored dot (green / amber / red by severity) plus your
-  usage. Choose what it shows — the limit **percentage**, the week's **dollar**
-  value, or both (`47% · $1,612`) — and **which limit drives it** (the 5-hour
-  window, a weekly limit, or "Auto" = whichever is most severe). Optional reset
-  countdown.
-- **Dropdown:** each rate-limit window (5-hour, weekly-all, weekly-per-model)
-  with a usage bar and reset time, then a per-model token total and an
-  API-equivalent dollar figure for the current week.
-- **Visualization toggle:** show each limit as plain **bars**, or as a
-  **rabbit-and-turtle race** — a rabbit (your usage) and a turtle (time elapsed
-  in the window) on a shared track, so a glance tells you whether you're burning
-  faster than the clock. Pick it in Settings; defaults to bars.
-- **Pinned panel:** detach a chromeless, always-on-top "picture-in-picture"
-  widget (the **Pin** button in the dropdown footer). It floats over every Space
-  and fullscreen app without stealing focus, drags anywhere, resizes by its
-  corner, and its opacity and which sections it shows are adjustable. Position
-  and state persist across launches.
-- **Alerts:** a macOS notification when a limit crosses a threshold
-  (80% / 95% by default, adjustable).
-- **Settings:** refresh interval, countdown toggle, what the menu bar shows and
-  which limit drives it, alert thresholds, launch-at-login, the bars/race
-  visualization, and the pinned panel's opacity and visible sections.
-- **Quiet under load:** backs off automatically on rate-limit responses, and
-  keeps showing last-known numbers instead of an error.
+- **At a glance:** a small colored dot in your menu bar — green when you're
+  fine, amber when you're getting close, red when you're nearly out — next to
+  your usage percentage.
+- **The full picture:** click it for your 5-hour and weekly limits, when each
+  one resets, and a per-model breakdown of what you've used this week.
+- **A heads-up before you hit a wall:** an optional notification when you cross
+  80% (and 95%).
+- **Stays out of the way:** it lives in the menu bar, not the Dock, and updates
+  itself quietly in the background.
 
-## How it works
+## Before you install
 
-Two data sources:
+You need **Claude Code installed and signed in with a Claude subscription**
+(Pro or Max) — this app just reads the usage that Claude Code already tracks. If
+you use Claude through a pay-as-you-go API key instead of a subscription, the
+usage numbers won't show up (you'll see a **!** in the menu bar).
 
-1. **Rate limits** — `GET https://api.anthropic.com/api/oauth/usage` with your
-   Claude Code OAuth token (the same call `/usage` makes). The token is read
-   from the macOS Keychain item `Claude Code-credentials`, which Claude Code
-   keeps refreshed.
-2. **Token/cost** — parses `~/.claude/projects/**/*.jsonl` transcripts,
-   aggregating per-model token usage for the current weekly window and pricing
-   it via `PriceTable` (public list prices, easy to edit).
+You'll also need **macOS 13 or later** (any Mac from the last several years, Intel
+or Apple Silicon).
 
-Polls every 60s by default (configurable: 15s / 30s / 60s / 5m). The cost engine
-caches parsed files by modification date, so steady-state polling stays cheap
-even with a large transcript history.
+## Install (recommended)
 
-The dollar figures are notional "value extracted" — on a flat-fee subscription
-they're what the same tokens would cost on pay-as-you-go API pricing, not real
-spend.
-
-### Keychain access
-
-The app reads the credential by invoking `/usr/bin/security`, which accesses the
-Keychain item without a blocking permission dialog. (A freshly ad-hoc-signed app
-is not in the item's trust list, so a direct Security-framework read would prompt
-on every poll.)
-
-## Requirements
-
-- macOS 13 or later (Apple Silicon or Intel — the build is universal).
-- **Claude Code installed and signed in with a Claude subscription.** The app
-  reads usage from the OAuth token in your Keychain; pay-as-you-go API-key usage
-  is not reported.
-
-No developer tooling needed — grab the prebuilt app below. The Swift toolchain
-is only required if you build from source.
-
-## Install
-
-One command, no git or Xcode:
+Copy this line, paste it into the **Terminal** app, and press Return:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/icedumpy/claude-code-usage-bar/main/scripts/install-release.sh | bash
 ```
 
-It downloads the latest release, installs to `/Applications`, clears the
-Gatekeeper quarantine flag, and launches the app.
+That's it. It downloads the app, puts it in your Applications folder, and opens
+it — no security prompts to fight. (New to Terminal? It's in
+Applications → Utilities, or press ⌘-Space and type "Terminal".)
 
-Prefer doing it by hand? Download `ClaudeUsageBar.zip` from
-[Releases](https://github.com/icedumpy/claude-code-usage-bar/releases/latest),
-unzip, drag `ClaudeUsageBar.app` to `/Applications`, then — because the app is
-ad-hoc signed, not notarized — clear the quarantine flag before first launch:
+Look for the colored Claude dot in your menu bar, up near the clock.
 
-```sh
-xattr -dr com.apple.quarantine /Applications/ClaudeUsageBar.app
-```
+<details>
+<summary><b>Prefer not to use Terminal? Install by hand instead.</b></summary>
 
-(Or right-click the app and choose **Open**; on macOS 15+ you may also need
-System Settings > Privacy & Security > **Open Anyway**.)
+This works too, but because the app isn't signed through Apple's paid developer
+program, macOS will show an extra security prompt the first time — see
+[If macOS blocks the app](#if-macos-blocks-the-app) below.
 
-Once running: open the dropdown, click **Settings…**, and enable
-**Launch at login** so it starts with your Mac.
+1. Download **ClaudeUsageBar.zip** from the
+   [latest release](https://github.com/icedumpy/claude-code-usage-bar/releases/latest).
+2. Double-click the zip to unpack it, then drag **ClaudeUsageBar** into your
+   **Applications** folder.
+3. Open it (see the security-prompt note below if macOS stops you).
 
-### Build from source
+</details>
 
-Requires the Swift toolchain — Xcode Command Line Tools is enough
-(`xcode-select --install`), no full Xcode needed:
+## If macOS blocks the app
 
-```sh
-git clone https://github.com/icedumpy/claude-code-usage-bar.git
-cd claude-code-usage-bar
-./scripts/install.sh        # builds the universal .app, installs to /Applications, launches
-```
+If you installed by hand, macOS may say the app *"cannot be opened because Apple
+cannot check it for malicious software"* or that it's from an *"unidentified
+developer."* That's expected: it just means the app isn't signed through
+Apple's $99/year developer program — **not** that anything is wrong with it.
+The code is open source and right here in this repo.
 
-A locally built app has no quarantine flag, so no Gatekeeper dance is needed.
+To allow it (one time):
 
-## Updating
+1. Try to open the app once and let the warning appear, then close it.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll down to the Security section — you'll see a line about ClaudeUsageBar
+   being blocked. Click **Open Anyway** and confirm.
+4. Open the app again.
 
-The dropdown shows an **Update available** banner when a new release is out.
-Hit **Update & Relaunch** and the app downloads the latest release, verifies it
-(bundle identity, version, code signature), swaps itself in place, and
-relaunches — no Terminal needed. **Notes** opens the release page instead.
+(The recommended Terminal install above skips all of this.)
 
-The swap is done by a small detached helper on the same disk volume, so each
-move is atomic; if anything fails it restores the previous version and reports
-the error on next launch, so you're never left without a working app. If the app
-lives somewhere it can't rewrite (e.g. you'd need admin), the banner falls back
-to opening the release page so you can re-run the one-line installer. Building
-from source? `git pull && ./scripts/install.sh`.
+## First run
 
-Your custom icons and settings live in
-`~/Library/Application Support/ClaudeUsageBar/` and are **not** touched by an
-update, so they survive upgrades.
+- The app appears as a **colored Claude dot in the menu bar**, not in the Dock.
+  If you don't see it, your menu bar may be full — try quitting an app or two,
+  or widening the bar.
+- **Click the dot** to see your limits and this week's breakdown.
+- To have it start automatically with your Mac: click the dot, choose
+  **Settings…**, and turn on **Launch at login**.
+
+> The dollar amounts are an *estimate of value*, not a bill. On a subscription
+> you pay a flat fee; the figure shows what the same usage would cost at
+> pay-as-you-go API prices. You are **not** being charged that.
+
+## A few handy extras
+
+- **Pick what the menu bar shows** (Settings): the percentage, the week's dollar
+  estimate, or both — and which limit it tracks (the 5-hour window, a weekly
+  limit, or whichever is most urgent).
+- **Rabbit-and-turtle view:** an optional way to draw each limit as a race — a
+  rabbit (your usage) chasing a turtle (time elapsed) — so you can instantly see
+  if you're burning faster than the clock. Turn it on in Settings.
+- **Pin it on top:** the **Pin** button in the dropdown floats a small always-on-
+  top panel that stays visible over any window or fullscreen app. Drag it
+  anywhere; drag its right edge to make it wider; adjust its see-through-ness in
+  Settings.
+
+## Keeping it up to date
+
+When a new version is out, the dropdown shows an **Update available** banner —
+click **Update & Relaunch** and the app updates itself and restarts. No Terminal,
+nothing to download by hand. Your settings and any custom icons are kept.
+
+> Already on an old version (1.0.0 or earlier)? That build doesn't have the
+> one-click updater yet, so do the [recommended install](#install-recommended)
+> once more to get onto it — after that, updates are a single click.
 
 ## iPhone widget (optional)
 
-Check your usage from your phone's home screen, synced from the Mac — no Apple
-Developer account, no App Store. It works through [Scriptable](https://scriptable.app),
-a free app that runs the widget script in `scriptable/usage-widget.js`.
+Want your usage on your phone's home screen too? You can, with no Apple Developer
+account and no App Store, using the free [Scriptable](https://scriptable.app)
+app. The Mac app writes a small summary (percentages and reset times only —
+never your login token) into Scriptable's iCloud folder, and a widget shows it
+on your phone. It updates whenever your Mac is on and syncs, and dims when the
+data gets stale.
 
-How it works: on each successful refresh the Mac app writes a small
-`usage.json` (hero limit percent, label, reset time, weekly dollars — never your
-token) into Scriptable's iCloud Drive folder. iCloud syncs it to your phone, and
-the widget renders a percent ring plus a reset countdown. It's **sync-stale**,
-not live: the widget shows how long ago it synced and dims when the data is old
-(e.g. your Mac has been off).
+<details>
+<summary>One-time setup</summary>
 
-Setup (one-time):
+1. Install **Scriptable** from the App Store and turn on iCloud Drive for it
+   (Settings → your name → iCloud → Drive → **Scriptable** on).
+2. In this app's **Settings**, turn on **Sync to iPhone widget**.
+3. Run the Mac app once so it writes the summary file.
+4. In Scriptable, create a new script, paste in the contents of
+   [`scriptable/usage-widget.js`](scriptable/usage-widget.js), and name it
+   **ClaudeUsage**.
+5. On your phone's home screen: long-press → add a small **Scriptable** widget →
+   edit it → choose the **ClaudeUsage** script.
 
-1. Install **Scriptable** from the App Store and enable iCloud Drive for it
-   (Settings → your Apple ID → iCloud → Drive → **Scriptable** on). This makes
-   Scriptable's folder appear in your Mac's iCloud Drive.
-2. Run the Mac app once so it writes `usage.json`.
-3. In Scriptable, create a new script, paste in `scriptable/usage-widget.js`,
-   and name it **ClaudeUsage**.
-4. On your home screen: long-press → add a small Scriptable widget → edit it →
-   choose the **ClaudeUsage** script.
+If Scriptable isn't installed, the Mac app just skips this — nothing else
+changes.
 
-If Scriptable isn't installed, the Mac app simply skips the write — nothing
-else changes.
+</details>
 
 ## Privacy
 
-The app has no embedded secrets and no server of its own. Your OAuth token is
-read at runtime from *your* Keychain and sent only to Anthropic's API — exactly
-as Claude Code does — never to the author or any third party. The token/cost
-breakdown is computed entirely from local files on your machine.
+The app has no server of its own and no hidden secrets. Your Claude login token
+is read from *your* Mac's Keychain at runtime and sent only to Anthropic — the
+exact same thing Claude Code itself does — never to the author or anyone else.
+The usage and cost breakdown is calculated entirely from files already on your
+Mac.
 
-## Custom icons
+## Questions & troubleshooting
 
-The menu bar icon is loaded from three SVG files (one per severity); drop in your
-own art and it is picked up automatically (no rebuild):
+- **I see a `!` in the menu bar.** You're not signed in to Claude Code with a
+  subscription. Open Claude Code, sign in, and it'll clear.
+- **I see a `?` or the numbers look stale.** The app couldn't reach Anthropic
+  just now (a hiccup or a rate limit). It keeps showing the last known numbers
+  and retries automatically.
+- **Nothing in the menu bar.** The bar may be full and hiding it — free up space,
+  or check the app is running (it has no Dock icon).
+- **Is this official?** No — it's an independent, open-source app that reads the
+  same usage data Claude Code uses.
 
-```
-~/Library/Application Support/ClaudeUsageBar/icons/
-   normal.svg     # low usage   (green by default)
-   warning.svg    # mid usage   (amber by default)
-   critical.svg   # high usage  (red by default)
-```
+## For developers
 
-The app renders whatever SVG is in that folder. It is a normal user-writable
-directory, so only put art you trust there (SVG contents are not sanitized
-before rendering).
-
-## Architecture
-
-- `Sources/UsageCore/` — UI-free, unit-tested data layer: `UsageClient` (API),
-  `CostEngine` (actor; JSONL parsing + caching), `Credentials` (token parsing),
-  `PriceTable`, `ThresholdAlerter`, `UsageSnapshot`, `Formatting`, and
-  `PinnedPanelGeometry` (pure clamp + on/off-screen logic for the pinned panel).
-- `Sources/ClaudeUsageBar/` — SwiftUI app: `UsageStore` (`@MainActor`
-  `ObservableObject` polling + backoff), `DropdownView` (with the bars/race
-  visualization), `SettingsView`, `PinnedPanelController` / `PinnedPanelView`
-  (the floating PiP panel), `NotificationManager`, `ShellCredentialProvider`,
-  and `Probe` (`--probe` CLI).
-
-## Other commands
-
-```sh
-swift test                              # run the unit tests (Swift Testing)
-.build/release/ClaudeUsageBar --probe   # print what the menu bar would show
-```
-
-## Distributing
-
-Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds the
-universal app and publishes `ClaudeUsageBar.zip` on GitHub Releases — that zip
-is what the one-line installer and the in-app update banner point at. The app
-is ad-hoc signed; removing the Gatekeeper warning entirely would require an
-Apple Developer account ($99/yr) to Developer-ID-sign and notarize (roadmap).
-The default icons are plain colored circles (original artwork, no third-party
-marks), so the repo is safe to share as-is.
-
-## Notes
-
-- The `/api/oauth/usage` endpoint is undocumented, so an Anthropic change could
-  break the rate-limit display. The token/cost breakdown reads local files and
-  is unaffected.
-- If your token expires while Claude Code is closed, the bar shows a warning
-  state until you next use Claude Code (the app does not refresh the token
-  itself).
-- Update `PriceTable` when Anthropic's public prices change.
+Building from source, how it works under the hood, the architecture, and the
+release process live in **[DEVELOPMENT.md](DEVELOPMENT.md)**. Contributions
+welcome.
 
 ## License
 
