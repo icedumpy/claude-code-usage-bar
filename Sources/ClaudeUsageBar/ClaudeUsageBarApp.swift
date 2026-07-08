@@ -5,10 +5,13 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = UsageStore.live()
+    let updater = Updater()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ClaudeMark.ensurePlaceholders()
         NotificationManager.shared.requestAuthorization()
+        // Reconcile any interrupted self-update before anything else touches disk.
+        updater.reconcileAtLaunch()
         store.start()
         // Re-attach the pinned panel if it was left open last session.
         if store.isPinned { PinnedPanelController.shared.show(store: store) }
@@ -20,7 +23,7 @@ struct ClaudeUsageBarApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            DropdownView(store: delegate.store)
+            DropdownView(store: delegate.store, updater: delegate.updater)
         } label: {
             MenuBarLabelView(store: delegate.store)
         }

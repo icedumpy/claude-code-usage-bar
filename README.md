@@ -115,9 +115,17 @@ A locally built app has no quarantine flag, so no Gatekeeper dance is needed.
 
 ## Updating
 
-The dropdown shows an **Update available** banner when a new release is out —
-click it, or just re-run the one-line installer above. Building from source?
-`git pull && ./scripts/install.sh`.
+The dropdown shows an **Update available** banner when a new release is out.
+Hit **Update & Relaunch** and the app downloads the latest release, verifies it
+(bundle identity, version, code signature), swaps itself in place, and
+relaunches — no Terminal needed. **Notes** opens the release page instead.
+
+The swap is done by a small detached helper on the same disk volume, so each
+move is atomic; if anything fails it restores the previous version and reports
+the error on next launch, so you're never left without a working app. If the app
+lives somewhere it can't rewrite (e.g. you'd need admin), the banner falls back
+to opening the release page so you can re-run the one-line installer. Building
+from source? `git pull && ./scripts/install.sh`.
 
 Your custom icons and settings live in
 `~/Library/Application Support/ClaudeUsageBar/` and are **not** touched by an

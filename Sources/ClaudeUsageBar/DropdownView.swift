@@ -3,6 +3,7 @@ import UsageCore
 
 struct DropdownView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var updater: Updater
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -20,15 +21,40 @@ struct DropdownView: View {
         .frame(width: 320)
     }
 
+    @ViewBuilder
     private func updateBanner(_ update: UpdateInfo) -> some View {
-        Button {
-            if let url = URL(string: update.url) { NSWorkspace.shared.open(url) }
-        } label: {
-            Label("Update available — v\(update.version)", systemImage: "arrow.down.circle.fill")
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.blue)
+        switch updater.state {
+        case .working(let label):
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(label).font(.callout.weight(.medium)).foregroundStyle(.secondary)
+            }
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                releasePageLink(update, label: "Open release page")
+            }
+        case .idle:
+            HStack(spacing: 10) {
+                Button {
+                    if let url = URL(string: update.url) { updater.updateAndRelaunch(releasePage: url) }
+                } label: {
+                    Label("Update & Relaunch — v\(update.version)", systemImage: "arrow.down.circle.fill")
+                        .font(.callout.weight(.medium)).foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+                releasePageLink(update, label: "Notes")
+            }
         }
-        .buttonStyle(.plain)
+    }
+
+    private func releasePageLink(_ update: UpdateInfo, label: String) -> some View {
+        Button(label) {
+            if let url = URL(string: update.url) { NSWorkspace.shared.open(url) }
+        }
+        .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
     }
 
     private var header: some View {
