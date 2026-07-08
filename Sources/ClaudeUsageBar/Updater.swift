@@ -170,7 +170,10 @@ final class Updater: ObservableObject {
         env["CUB_STAGEDIR"] = paths.stageDir.path
         env["CUB_LOCK"] = paths.lock.path
         env["CUB_STATUS"] = statusFileURL().path
-        env["CUB_VERSION"] = version
+        // The version comes from the *downloaded* bundle's Info.plist; the
+        // helper interpolates it into the status JSON, so strip anything that
+        // could break the JSON (a quote/backslash in a malicious plist).
+        env["CUB_VERSION"] = version.filter { $0 != "\"" && $0 != "\\" }
         task.environment = env
         try task.run()   // detached: not waited on; survives our termination
     }
@@ -204,6 +207,13 @@ final class Updater: ObservableObject {
     # is really gone (guards against PID reuse racing the swap).
     for _ in $(seq 1 60); do kill -0 "$CUB_PID" 2>/dev/null || break; sleep 0.5; done
     if kill -0 "$CUB_PID" 2>/dev/null; then fail "old app did not quit"; fi
+
+    # Re-verify the signature at the last moment before the swap. The app
+    # process verified the bundle minutes earlier; without this re-check,
+    # anything that mutated the staged bundle during the PID wait would be
+    # installed under the earlier verification's name (security review #1).
+    /usr/bin/codesign --verify --deep --strict "$CUB_NEWAPP" 2>/dev/null \\
+      || fail "new app failed signature re-check"
 
     # Park the current bundle, then move the new one into place — both are on the
     # same volume, so each mv is an atomic rename.
