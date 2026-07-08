@@ -136,8 +136,10 @@ struct PinnedPanelView: View {
     }
 
     // Drag the corner to set the panel WIDTH; content reflows and the height
-    // follows. `dragStartWidth` is captured once per gesture so the delta is
-    // measured from a fixed base, not the live (changing) width.
+    // follows. Measure the drag in the GLOBAL coordinate space, not the grip's
+    // local one: the grip slides right as the panel widens, so a local-space
+    // translation feeds back on itself and the resize stutters. `dragStartWidth`
+    // is captured once per gesture so the delta is from a fixed base.
     private var resizeGrip: some View {
         Image(systemName: "arrow.down.right.and.arrow.up.left")
             .font(.system(size: 12, weight: .bold))
@@ -147,7 +149,7 @@ struct PinnedPanelView: View {
             .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
             .highPriorityGesture(
-                DragGesture()
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
                     .onChanged { v in
                         if dragStartWidth == nil { dragStartWidth = store.pinWidth }
                         let base = dragStartWidth ?? store.pinWidth
