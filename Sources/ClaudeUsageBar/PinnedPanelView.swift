@@ -55,9 +55,9 @@ struct PinnedPanelView: View {
                     .background(Color.secondary.opacity(0.15), in: Capsule())
             }
         }
-        // Always reserve room for the hover controls so they never cover the
-        // badge and the header doesn't shift when they fade in.
-        .padding(.trailing, 36)
+        // Always reserve room for the hover controls (refresh/gear/close) so
+        // they never cover the badge and the header doesn't shift as they fade.
+        .padding(.trailing, 56)
     }
 
     private func rows(_ snap: UsageSnapshot) -> some View {
@@ -101,6 +101,13 @@ struct PinnedPanelView: View {
 
     private var hoverControls: some View {
         HStack(spacing: 8) {
+            // Manual refresh (bypasses backoff) — the frequent action, so it
+            // sits leftmost. The signed-out note tells the user to Refresh; this
+            // is the button that does it.
+            Button { store.refreshNow() } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .disabled(store.isRefreshing)
             Button { SettingsWindowController.shared.show(store: store) } label: {
                 Image(systemName: "gearshape.fill")
             }
