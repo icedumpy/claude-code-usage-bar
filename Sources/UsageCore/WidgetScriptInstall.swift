@@ -8,7 +8,8 @@ import Foundation
 public enum WidgetScriptInstall {
     /// Bump whenever `scriptable/usage-widget.js` changes so already-installed
     /// copies that still carry our marker get refreshed on the next sync.
-    public static let currentVersion = 1
+    /// v2: weekly-$ footer, Lock Screen (accessory) layouts.
+    public static let currentVersion = 2
 
     /// Leading marker line stamped onto scripts we manage. The trailing note is
     /// the opt-out: a user who wants to hand-edit the script deletes this line,
