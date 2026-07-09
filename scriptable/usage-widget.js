@@ -15,7 +15,10 @@
 // -----------------------------------------------------------------------------
 
 const FILE_NAME = "usage.json";
-const STALE_MINUTES = 30; // older than this -> dim the widget
+// Older than this -> mark stale. Set above the realistic end-to-end latency
+// (iCloud sync + WidgetKit's own redraw budget can each be tens of minutes), so
+// STALE means "the Mac has actually been unreachable a while", not routine lag.
+const STALE_MINUTES = 60;
 
 // Palette (tinted per severity, matching the Mac app's worst-wins model).
 const COLORS = {
@@ -169,7 +172,7 @@ function drawArc(ctx, center, radius, width, startFrac, endFrac, color) {
 function buildAccessory(fam, state, snap) {
   const w = new ListWidget();
   w.addAccessoryWidgetBackground = true;
-  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
+  w.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
   const ok = state === "ok";
   const pct = ok ? safePercent(snap.heroPercent) : null;
 
@@ -217,7 +220,7 @@ async function build() {
   // Nudge WidgetKit to redraw within ~15 min. It's only a hint (the OS owns the
   // real budget, and StandBy/always-on throttles harder), but without it a
   // charging bedside widget can sit stale far longer.
-  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
+  w.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
 
   if (state === "missing") return messageWidget(w, ["Open the Mac app", "to start syncing"]);
   if (state === "pending") return messageWidget(w, ["Syncing…", "waiting on iCloud"]);

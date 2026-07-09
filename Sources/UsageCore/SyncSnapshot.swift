@@ -42,6 +42,20 @@ public struct SyncSnapshot: Codable, Equatable, Sendable {
         self.updatedAt = updatedAt
     }
 
+    /// A stable key over the fields the widget actually *displays* (everything
+    /// except `updatedAt`), so the Mac can skip re-publishing when the phone
+    /// would render an identical card. Cutting that write churn is what lets
+    /// iCloud push the file to the phone promptly instead of coalescing a stream
+    /// of once-a-minute rewrites. weeklyUSD is bucketed to $10 so tiny cost ticks
+    /// don't force a write every refresh; a consequence is that a small visible
+    /// change in the widget's $ figure can lag until the next heartbeat (~5 min),
+    /// which is an intentional freshness-for-churn tradeoff.
+    public var displayKey: String {
+        let pct = heroPercent.map { String(Int($0.rounded())) } ?? "-"
+        let usd = Int((weeklyUSD / 10).rounded())
+        return "\(pct)|\(heroLabel)|\(severity)|\(resetsAt ?? "")|\(usd)"
+    }
+
     /// Build from the app's display snapshot. `heroRow` is the row that actually
     /// drives the menu bar (so the widget honors the user's hero choice); when
     /// nil, falls back to the snapshot's default hero fields.

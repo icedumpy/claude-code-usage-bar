@@ -137,6 +137,12 @@ final class UsageStore: ObservableObject {
     private let costEngine: CostEngine
     private let syncWriter: ScriptableSyncWriter
     private let widgetSync: WidgetSyncCoordinator
+    // Widget-sync throttle: last published card key + when, and the heartbeat
+    // interval that forces a refresh even when the card is unchanged.
+    private var lastWidgetKey: String?
+    private var lastWidgetSyncAt: Date?
+    private var widgetSyncInFlight = false
+    private static let widgetHeartbeat: TimeInterval = 300
     private var timer: Timer?
     private var updateCheckTask: Task<Void, Never>?
     private var inFlight = false
@@ -246,11 +252,20 @@ final class UsageStore: ObservableObject {
             // affects the refresh.
             if syncToWidget {
                 let syncSnap = SyncSnapshot.from(snapshot: snapshot, heroRow: heroRow)
-                let scriptBody = Self.bundledWidgetScript
-                Task { [weak self] in
-                    guard let self else { return }
-                    let result = await self.widgetSync.sync(syncSnap, scriptBody: scriptBody)
-                    self.setWidgetStatus(wroteData: result.wroteData, script: result.script)
+                // Only publish when the card would look different, or every 5 min
+                // as a heartbeat to keep the timestamp fresh. Rewriting the file
+                // every 60s makes iCloud defer syncing it to the phone.
+                let key = syncSnap.displayKey
+                let heartbeatDue = lastWidgetSyncAt
+                    .map { Date().timeIntervalSince($0) >= Self.widgetHeartbeat } ?? true
+                if !widgetSyncInFlight, key != lastWidgetKey || heartbeatDue {
+                    widgetSyncInFlight = true
+                    let scriptBody = Self.bundledWidgetScript
+                    Task { [weak self] in
+                        guard let self else { return }
+                        let result = await self.widgetSync.sync(syncSnap, scriptBody: scriptBody)
+                        self.finishWidgetSync(key: key, result: result)
+                    }
                 }
             }
             if alertsEnabled {
@@ -272,6 +287,18 @@ final class UsageStore: ObservableObject {
             backoffUntil = Date().addingTimeInterval(
                 min(refreshInterval * pow(2, Double(failureStreak)), 900))
         }
+    }
+
+    /// Clear the in-flight flag and, only on a real write, advance the throttle
+    /// markers — so a failed sync retries on the next refresh instead of being
+    /// suppressed until the 5-minute heartbeat.
+    private func finishWidgetSync(key: String, result: WidgetSyncCoordinator.Result) {
+        widgetSyncInFlight = false
+        if result.wroteData {
+            lastWidgetKey = key
+            lastWidgetSyncAt = Date()
+        }
+        setWidgetStatus(wroteData: result.wroteData, script: result.script)
     }
 
     /// Fold the sync result into the user-visible status. Only a missing folder

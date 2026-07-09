@@ -9,7 +9,8 @@ public enum WidgetScriptInstall {
     /// Bump whenever `scriptable/usage-widget.js` changes so already-installed
     /// copies that still carry our marker get refreshed on the next sync.
     /// v2: weekly-$ footer, Lock Screen (accessory) layouts.
-    public static let currentVersion = 2
+    /// v3: 60-min stale threshold + 10-min refresh hint (fewer false STALEs).
+    public static let currentVersion = 3
 
     /// Leading marker line stamped onto scripts we manage. The trailing note is
     /// the opt-out: a user who wants to hand-edit the script deletes this line,
