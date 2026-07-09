@@ -15,7 +15,10 @@
 // -----------------------------------------------------------------------------
 
 const FILE_NAME = "usage.json";
-const STALE_MINUTES = 30; // older than this -> dim the widget
+// Older than this -> mark stale. Set above the realistic end-to-end latency
+// (iCloud sync + WidgetKit's own redraw budget can each be tens of minutes), so
+// STALE means "the Mac has actually been unreachable a while", not routine lag.
+const STALE_MINUTES = 60;
 
 // Palette (tinted per severity, matching the Mac app's worst-wins model).
 const COLORS = {
@@ -99,6 +102,23 @@ function agoText(iso) {
   return `updated ${h}h ago`;
 }
 
+// The week's notional $ estimate, compact (e.g. $1.7k). Same figure the Mac
+// menu bar can show; it's a value estimate, not a bill.
+function moneyShort(usd) {
+  if (!Number.isFinite(usd)) return null;   // rejects null/undefined/NaN/Infinity
+  const a = Math.abs(usd);
+  if (a >= 1e6) return `$${(usd / 1e6).toFixed(1)}M`;
+  if (a >= 1000) return `$${(usd / 1000).toFixed(1)}k`;
+  if (a >= 10) return `$${Math.round(usd)}`;
+  return `$${usd.toFixed(1)}`;
+}
+
+// A percent we can safely round + render; anything non-numeric becomes null so
+// a corrupt payload shows "—" rather than "NaN%".
+function safePercent(v) {
+  return Number.isFinite(v) ? Math.round(v) : null;
+}
+
 // --- Ring drawing ------------------------------------------------------------
 // Draws the track + progress arc AND the percent number in the donut hole, so
 // the caller needs only one compact element instead of a ring plus a separate
@@ -113,14 +133,15 @@ function drawRing(percent, color) {
 
   const center = new Point(size / 2, size / 2);
   const radius = size / 2 - line / 2;
-  const frac = Math.max(0, Math.min(1, (percent || 0) / 100));
+  const p = safePercent(percent);
+  const frac = Math.max(0, Math.min(1, (p || 0) / 100));
 
   // Track (full circle) then the progress arc on top, drawn as short segments.
   drawArc(ctx, center, radius, line, 0, 1, COLORS.track);
   if (frac > 0) drawArc(ctx, center, radius, line, 0, frac, color);
 
   // Percent, centered in the hole. Rect is top-aligned, so offset y to center.
-  const text = percent == null ? "—" : `${Math.round(percent)}%`;
+  const text = p == null ? "—" : `${p}%`;
   ctx.setTextAlignedCenter();
   ctx.setTextColor(COLORS.text);
   ctx.setFont(Font.boldSystemFont(34));
@@ -145,17 +166,61 @@ function drawArc(ctx, center, radius, width, startFrac, endFrac, color) {
   ctx.strokePath();
 }
 
+// --- Lock Screen (accessory) widgets -----------------------------------------
+// iOS 16+ Lock Screen / always-on complications. The system renders these
+// monochrome/tinted, so color is mostly ignored; keep them terse and legible.
+function buildAccessory(fam, state, snap) {
+  const w = new ListWidget();
+  w.addAccessoryWidgetBackground = true;
+  w.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
+  const ok = state === "ok";
+  const pct = ok ? safePercent(snap.heroPercent) : null;
+
+  if (fam === "accessoryInline") {
+    // Sits beside the clock; a single short line (text only).
+    w.addText(pct == null ? "Claude —" : `Claude ${pct}%`);
+    return w;
+  }
+  if (fam === "accessoryCircular") {
+    w.setPadding(1, 1, 1, 1);
+    const row = w.addStack();
+    row.addSpacer();
+    const img = row.addImage(drawRing(pct, COLORS.text));
+    img.imageSize = new Size(54, 54);
+    row.addSpacer();
+    return w;
+  }
+  // accessoryRectangular
+  const title = w.addText(ok ? "Claude" : "Claude · sync");
+  title.font = Font.mediumSystemFont(11);
+  const big = w.addText(pct == null ? "—" : `${pct}% · ${snap.heroLabel || ""}`);
+  big.font = Font.boldSystemFont(15);
+  big.lineLimit = 1;
+  if (ok && snap.resetsAt) {
+    const cd = countdown(snap.resetsAt);
+    if (cd) {
+      const c = w.addText(cd);
+      c.font = Font.systemFont(11);
+    }
+  }
+  return w;
+}
+
 // --- Build the widget --------------------------------------------------------
 async function build() {
+  const { state, snap } = await loadSnapshot();
+
+  // Lock Screen families get their own compact layout.
+  const fam = config.widgetFamily;
+  if (fam && fam.indexOf("accessory") === 0) return buildAccessory(fam, state, snap);
+
   const w = new ListWidget();
   w.backgroundColor = COLORS.bg;
   w.setPadding(12, 14, 12, 14);
   // Nudge WidgetKit to redraw within ~15 min. It's only a hint (the OS owns the
   // real budget, and StandBy/always-on throttles harder), but without it a
   // charging bedside widget can sit stale far longer.
-  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
-
-  const { state, snap } = await loadSnapshot();
+  w.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
 
   if (state === "missing") return messageWidget(w, ["Open the Mac app", "to start syncing"]);
   if (state === "pending") return messageWidget(w, ["Syncing…", "waiting on iCloud"]);
@@ -185,12 +250,25 @@ async function build() {
 
   w.addSpacer();
 
+  // Footer on one line: reset countdown on the left, the week's $ estimate on
+  // the right (weeklyUSD rides in the same payload). One line keeps the small
+  // widget from overflowing.
   const cd = snap.resetsAt ? countdown(snap.resetsAt) : null;
-  if (cd) {
-    const c = w.addText(cd);
-    c.centerAlignText();
-    c.textColor = COLORS.subtle;
-    c.font = Font.systemFont(11);
+  const money = moneyShort(snap.weeklyUSD);
+  if (cd || money) {
+    const foot = w.addStack();
+    foot.centerAlignContent();
+    const left = foot.addText(cd || "");
+    left.textColor = COLORS.subtle;
+    left.font = Font.systemFont(11);
+    left.lineLimit = 1;
+    foot.addSpacer();
+    if (money) {
+      const right = foot.addText(money);
+      right.textColor = COLORS.subtle;
+      right.font = Font.systemFont(11);
+      right.lineLimit = 1;
+    }
   }
   // Spell out staleness in words, not just color: StandBy's Night Mode tints
   // everything red, which would erase a red-only "stale" signal.

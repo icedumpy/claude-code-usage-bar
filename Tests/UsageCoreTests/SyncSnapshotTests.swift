@@ -132,6 +132,27 @@ struct SyncSnapshotTests {
         #expect(ScriptableSyncWriter(directory: dir).installScript("BODY") == .folderMissing)
     }
 
+    @Test func displayKeyIgnoresUpdatedAtButTracksCard() {
+        let base = SyncSnapshot(heroPercent: 39, heroLabel: "5-hour window",
+                                severity: "normal", resetsAt: "2026-07-08T22:09:59Z",
+                                weeklyUSD: 2149.0, updatedAt: "2026-07-08T11:00:00Z")
+        // Same card, later timestamp -> same key (no republish needed).
+        let later = SyncSnapshot(heroPercent: 39, heroLabel: "5-hour window",
+                                 severity: "normal", resetsAt: "2026-07-08T22:09:59Z",
+                                 weeklyUSD: 2149.0, updatedAt: "2026-07-08T11:05:00Z")
+        #expect(base.displayKey == later.displayKey)
+        // A one-point move in percent changes the key.
+        let moved = SyncSnapshot(heroPercent: 40, heroLabel: "5-hour window",
+                                 severity: "normal", resetsAt: "2026-07-08T22:09:59Z",
+                                 weeklyUSD: 2149.0, updatedAt: "2026-07-08T11:00:00Z")
+        #expect(base.displayKey != moved.displayKey)
+        // A sub-$10 cost tick does NOT change the key; a larger one does.
+        let tick = SyncSnapshot(heroPercent: 39, heroLabel: "5-hour window",
+                                severity: "normal", resetsAt: "2026-07-08T22:09:59Z",
+                                weeklyUSD: 2152.0, updatedAt: "2026-07-08T11:00:00Z")
+        #expect(base.displayKey == tick.displayKey)
+    }
+
     private func makeTempDir(_ tag: String) throws -> URL {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(tag)-\(UUID().uuidString)", isDirectory: true)
