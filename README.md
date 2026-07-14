@@ -173,6 +173,62 @@ changes.
 
 </details>
 
+## Session notifications (optional)
+
+Want a heads-up when Claude Code itself is waiting on you — not just usage
+limits? `scripts/session-notify.sh` in this repo is a
+[Notification hook](https://docs.claude.com/en/docs/claude-code/hooks) for
+Claude Code that hands the event to ClaudeUsageBar, which fires a native
+macOS notification naming the **repo** (or folder) and the **session's
+title** (the same auto-generated title shown in Claude Code's `/resume`
+picker), so you can tell at a glance which project needs you when you have
+several sessions running.
+
+Routing it through the app (rather than calling `osascript -e 'display
+notification'` directly) fixes a real annoyance: a bare `osascript`
+notification is attributed to Script Editor, so clicking it just brings
+*Script Editor* forward. These notifications are attributed to ClaudeUsageBar
+instead, and clicking one activates the actual terminal app that hosted the
+session (Terminal, iTerm2, VS Code, Cursor, Warp, ... — detected generically
+by walking the process tree, no hardcoded app list).
+
+<details>
+<summary>One-time setup</summary>
+
+1. Clone or keep this repo somewhere permanent (the hook calls the script by
+   path), and make sure ClaudeUsageBar is installed (see
+   [Install](#install-recommended) above) — the script hands notifications to
+   it via a `claudeusagebar://` URL, so it needs to be built/installed at
+   least once for that link to resolve. (If it isn't installed, the script
+   falls back to a plain notification — you still get the heads-up, just
+   without the smart click-to-focus.)
+2. Add it to the `Notification` hook in `~/.claude/settings.json`:
+
+   ```json
+   {
+     "hooks": {
+       "Notification": [
+         {
+           "matcher": "",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "/path/to/claude-code-usage-bar/scripts/session-notify.sh"
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+
+3. Restart Claude Code (hooks load at session start) — the next time it needs
+   your permission or input, you'll get a notification like **"my-repo" /
+   "Fix the login bug"**, and clicking it takes you straight back to the
+   terminal Claude is waiting in.
+
+</details>
+
 ## Privacy
 
 The app has no server of its own and no hidden secrets. Your Claude login token

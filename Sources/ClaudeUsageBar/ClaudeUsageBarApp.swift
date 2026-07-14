@@ -1,4 +1,5 @@
 import SwiftUI
+import UsageCore
 
 /// Owns the store and starts polling at launch — `.task`/`.onAppear` on a
 /// MenuBarExtra label do not fire reliably, so we drive it from the delegate.
@@ -15,6 +16,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.start()
         // Re-attach the pinned panel if it was left open last session.
         if store.isPinned { PinnedPanelController.shared.show(store: store) }
+    }
+
+    /// Entry point for `claudeusagebar://session-notify` links, opened via
+    /// `open -g` by `scripts/session-notify.sh` (the Claude Code Notification
+    /// hook). `open` launches us in the background if we weren't already
+    /// running, so this can fire even with no dock/menu-bar interaction.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            guard let session = SessionNotificationLink.parse(url) else { continue }
+            NotificationManager.shared.fireSession(session)
+        }
     }
 }
 
