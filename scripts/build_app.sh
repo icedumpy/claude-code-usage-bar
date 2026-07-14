@@ -23,7 +23,11 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 lipo -create "$ARM" "$X86" -output "$APP/Contents/MacOS/$APP_NAME"
 lipo -info "$APP/Contents/MacOS/$APP_NAME"
-cp "$ROOT/icon/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+if [ -f "$ROOT/icon/AppIcon.icns" ]; then
+  cp "$ROOT/icon/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+else
+  echo "==> no icon/AppIcon.icns; skipping app icon (menu-bar glyph is unaffected)"
+fi
 # Ship the Scriptable widget script so the app can drop it into Scriptable's
 # iCloud folder — the iPhone user never has to paste it by hand.
 cp "$ROOT/scriptable/usage-widget.js" "$APP/Contents/Resources/usage-widget.js"
@@ -43,10 +47,20 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>LSUIElement</key><true/>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>${BUNDLE_ID}.session-notify</string>
+      <key>CFBundleURLSchemes</key><array><string>claudeusagebar</string></array>
+    </dict>
+  </array>
 </dict></plist>
 EOF
 
 echo "==> ad-hoc codesign"
 codesign --force --deep --sign - "$APP"
+
+echo "==> registering claudeusagebar:// URL scheme with Launch Services"
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f "$APP"
 
 echo "==> done: $APP"
